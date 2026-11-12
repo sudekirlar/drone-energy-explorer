@@ -1,6 +1,7 @@
 """Shared UI components and the reusable example card."""
 
-from typing import Callable, Dict
+from collections.abc import Callable
+
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
@@ -10,7 +11,7 @@ import streamlit as st
 def render_example_card(
     title: str,
     df: pd.DataFrame,
-    options: Dict[str, Callable[[pd.DataFrame], tuple[go.Figure, str]]],
+    options: dict[str, Callable[[pd.DataFrame], tuple[go.Figure, str]]],
     key_prefix: str,
 ) -> None:
     """Reusable interactive chart card with fragment isolation and finding box."""

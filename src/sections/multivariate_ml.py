@@ -2,8 +2,8 @@
 
 import pandas as pd
 import plotly.express as px
-from sklearn.ensemble import RandomForestRegressor
 import streamlit as st
+from sklearn.ensemble import RandomForestRegressor
 
 from src.data.filters import FilterState
 from src.theme import PALETTES
