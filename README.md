@@ -5,7 +5,7 @@
 CEN445 Introduction to Data Visualization · Çukurova University · Fall 2026
 Team: Sude Kırlar, İlayda Demir, Pelin
 
-> How do payload, cruise speed, altitude and wind shape the energy a delivery drone spends,
+> How do payload, cruise speed and altitude shape the energy a delivery drone spends,
 > and where in the flight does that energy go?
 
 An interactive Streamlit dashboard built on 209 real test flights of a DJI Matrice 100 package-delivery
@@ -53,7 +53,7 @@ docs/               decisions, model card, user test
 
 ## Visualizations
 
-TODO: table of the nine charts (chart, sub-question, interaction, author).
+TODO: table of the ten charts (chart, sub-question, interaction, author).
 
 ## Data cleaning
 
@@ -61,7 +61,7 @@ TODO: summary of the cleaning rules and their effect (details in the app's Data 
 
 ## Machine learning
 
-TODO: K-means and Random Forest, evaluation and limitations.
+TODO: K-means clustering and Random Forest regression, evaluation and limitations.
 
 ## Contributions
 

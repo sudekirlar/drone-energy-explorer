@@ -16,8 +16,8 @@ st.set_page_config(
 
 st.title("Drone Delivery Energy Explorer")
 st.write(
-    "How do payload, cruise speed, altitude and wind shape the energy a delivery drone "
-    "spends, and where in the flight does that energy go?"
+    "How do payload, cruise speed and altitude shape the energy a delivery drone spends, "
+    "and where in the flight does that energy go?"
 )
 st.info("Work in progress: the dashboard skeleton is being built.", icon=":material/construction:")
 
