@@ -128,3 +128,12 @@ def test_calculate_ground_speed():
     result = calculate_ground_speed(vx, vy)
     assert result.iloc[:3].tolist() == [5.0, 0.0, 5.0]
     assert pd.isna(result.iloc[3])
+
+
+def test_calculate_distance_m():
+    """Integrate ground speed using actual time intervals."""
+    from src.data.preprocess import calculate_distance_m
+
+    time_s = pd.Series([0.0, 2.0, 5.0])
+    speed_mps = pd.Series([2.0, 4.0, 4.0])
+    assert calculate_distance_m(time_s, speed_mps) == 18.0

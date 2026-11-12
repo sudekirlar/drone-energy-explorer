@@ -91,3 +91,14 @@ def calculate_ground_speed(velocity_x: pd.Series, velocity_y: pd.Series) -> pd.S
     vx = pd.to_numeric(velocity_x, errors="coerce")
     vy = pd.to_numeric(velocity_y, errors="coerce")
     return (vx**2 + vy**2) ** 0.5
+
+
+def calculate_distance_m(time_s: pd.Series, ground_speed_mps: pd.Series) -> float:
+    """Integrate horizontal ground speed over time to obtain distance in meters."""
+    samples = pd.DataFrame({"time_s": time_s, "speed_mps": ground_speed_mps}).dropna()
+    samples = samples.sort_values("time_s")
+    if len(samples) < 2:
+        return 0.0
+    dt = samples["time_s"].diff().iloc[1:].to_numpy()
+    speeds = samples["speed_mps"].to_numpy()
+    return float(((speeds[1:] + speeds[:-1]) / 2 * dt).sum())
