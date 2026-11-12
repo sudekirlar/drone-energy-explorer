@@ -1,0 +1,45 @@
+# Who is asked for review automatically when a file changes.
+# Replace the three handles with real GitHub usernames before the first PR.
+#   PLATFORM_GH = Sude (Platform)   DATA_GH = İlayda (Data)   UIML_GH = Pelin (UI & ML)
+# Later lines win over earlier ones.
+
+*                           @PLATFORM_GH
+
+# Platform: contract, loading, phases, tooling
+/src/data/schema.py         @PLATFORM_GH
+/src/data/loader.py         @PLATFORM_GH
+/src/data/phases.py         @PLATFORM_GH
+/.github/                   @PLATFORM_GH
+/requirements*.txt          @PLATFORM_GH
+
+# Data: cleaning, tests, data quality
+/src/data/preprocess.py     @DATA_GH
+/tests/test_data.py         @DATA_GH
+/data/                      @DATA_GH
+/src/sections/overview.py   @DATA_GH
+
+# UI & ML: frame, theme, filters, models
+/app.py                     @UIML_GH
+/src/theme.py               @UIML_GH
+/src/data/filters.py        @UIML_GH
+/src/ml/                    @UIML_GH
+
+# Section owners (charts + section file)
+/src/sections/flight_space.py   @DATA_GH
+/src/charts/route_map.py        @DATA_GH
+/src/charts/flight_3d.py        @DATA_GH
+/src/charts/flight_heatmap.py   @DATA_GH
+
+/src/sections/energy_flow.py    @PLATFORM_GH
+/src/charts/treemap.py          @PLATFORM_GH
+/src/charts/sankey.py           @PLATFORM_GH
+/src/charts/current_voltage.py  @PLATFORM_GH
+
+/src/sections/multivariate_ml.py  @UIML_GH
+/src/charts/pcp.py                @UIML_GH
+/src/charts/violin.py             @UIML_GH
+/src/charts/ternary.py            @UIML_GH
+
+# Shared documents
+/README.md                  @PLATFORM_GH @DATA_GH @UIML_GH
+/docs/                      @PLATFORM_GH @DATA_GH @UIML_GH
