@@ -117,3 +117,14 @@ def test_calculate_relative_altitude():
     result = calculate_relative_altitude(altitude)
     assert pd.isna(result.iloc[0])
     assert result.iloc[1:].tolist() == [0.0, 25.0, -2.0]
+
+
+def test_calculate_ground_speed():
+    """Calculate horizontal speed from velocity components."""
+    from src.data.preprocess import calculate_ground_speed
+
+    vx = pd.Series([3.0, 0.0, -3.0, float("nan")])
+    vy = pd.Series([4.0, 0.0, 4.0, 2.0])
+    result = calculate_ground_speed(vx, vy)
+    assert result.iloc[:3].tolist() == [5.0, 0.0, 5.0]
+    assert pd.isna(result.iloc[3])

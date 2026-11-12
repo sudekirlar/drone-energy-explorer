@@ -84,3 +84,10 @@ def calculate_relative_altitude(position_z: pd.Series) -> pd.Series:
     if first_valid is None:
         return altitude
     return altitude - altitude.loc[first_valid]
+
+
+def calculate_ground_speed(velocity_x: pd.Series, velocity_y: pd.Series) -> pd.Series:
+    """Calculate horizontal ground-speed magnitude in meters per second."""
+    vx = pd.to_numeric(velocity_x, errors="coerce")
+    vy = pd.to_numeric(velocity_y, errors="coerce")
+    return (vx**2 + vy**2) ** 0.5
