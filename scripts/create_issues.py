@@ -8,6 +8,11 @@ With a GitHub Project board:      gh auth refresh -s project                  (o
   -> also adds every issue to project #1 and fills Status, Day and Estimate (h).
 
 Tasks follow the approved project plan (proje_plani) and chart guide ("On grafik, tek soru").
+An issue a teammate already opened for a task can be adopted instead of duplicated:
+                                  python scripts/create_issues.py --project 14 --adopt T2=1
+  -> issue #1 gets the task's title, labels, milestone and assignee; the plan's checklist is added
+     as a comment, so the author's own text stays untouched.
+
 Safe to re-run: labels are updated in place, and an issue whose title already exists is skipped.
 Assignment needs the teammates to have accepted the collaborator invitation; if it fails, the issue
 is created unassigned and a warning is printed.
@@ -477,6 +482,13 @@ def main() -> None:
     ap.add_argument("--dry-run", action="store_true", help="print, create nothing")
     ap.add_argument("--no-assign", action="store_true", help="create issues unassigned")
     ap.add_argument("--project", type=int, help="GitHub Project number to add the issues to")
+    ap.add_argument(
+        "--adopt",
+        action="append",
+        default=[],
+        metavar="TASK=NUMBER",
+        help="use an existing issue for a task instead of creating one, e.g. T2=1",
+    )
     a = ap.parse_args()
 
     if a.dry_run:
@@ -517,8 +529,29 @@ def main() -> None:
         board = Board(a.project, owner)
         print(f"project #{a.project} ok (fields: {', '.join(board.fields)})")
 
+    adopt = dict(x.split("=", 1) for x in a.adopt)
+
     for t in TASKS:
         title = f"[{t[0]}] {t[1]}"
+        if t[0] in adopt and title not in existing:
+            num = adopt[t[0]]
+            lab, asg = labels_and_assignees(t)
+            args = ["issue", "edit", num, "--title", title, "--milestone", MILESTONE]
+            for lb in lab:
+                args += ["--add-label", lb]
+            if not a.no_assign:
+                for u in asg:
+                    args += ["--add-assignee", u]
+            r = gh(*args, check=False)
+            if r.returncode != 0:
+                sys.exit(f"failed to adopt #{num} for {t[0]}: {r.stderr}")
+            gh("issue", "comment", num, "--body", "Plan for this task:\n\n" + body(t))
+            url = gh("issue", "view", num, "--json", "url", "-q", ".url").stdout.strip()
+            existing[title] = url
+            print(f"adopt {title}  {url}")
+            if board:
+                board.put(url, t[0])
+            continue
         if title in existing:
             print(f"skip  {title}")
             if board:
