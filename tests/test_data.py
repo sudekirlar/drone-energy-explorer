@@ -152,3 +152,20 @@ def test_summarize_data_quality():
     assert result["invalid_time_count"] == 1
     assert result["negative_time_count"] == 1
     assert result["negative_current_count"] == 2
+
+
+def test_summarize_flight_quality():
+    from src.data.preprocess import summarize_flight_quality
+
+    telemetry = pd.DataFrame(
+        {
+            "flight": [1, 1, 2, 2],
+            "time": [0.0, 1.0, 0.0, 1.0],
+            "battery_current": [-0.1, 2.0, 3.0, -0.2],
+        }
+    )
+    result = summarize_flight_quality(telemetry)
+    assert result["flight"].tolist() == [1, 2]
+    assert result["row_count"].tolist() == [2, 2]
+    assert result["negative_current_count"].tolist() == [1, 1]
+    assert result["duplicate_row_count"].tolist() == [0, 0]

@@ -122,3 +122,22 @@ def summarize_data_quality(telemetry: pd.DataFrame) -> dict:
         "negative_time_count": int((time_s < 0).sum()),
         "negative_current_count": int((current_a < 0).sum()),
     }
+
+
+def summarize_flight_quality(telemetry: pd.DataFrame) -> pd.DataFrame:
+    """Summarize telemetry quality separately for each flight."""
+    rows = []
+    for flight, group in telemetry.groupby("flight", sort=True):
+        rows.append({"flight": flight, **summarize_data_quality(group)})
+    return pd.DataFrame(
+        rows,
+        columns=[
+            "flight",
+            "row_count",
+            "missing_value_count",
+            "duplicate_row_count",
+            "invalid_time_count",
+            "negative_time_count",
+            "negative_current_count",
+        ],
+    )
