@@ -21,3 +21,19 @@ def calculate_energy_wh(time_s: pd.Series, power_w: pd.Series) -> float:
         samples["power_w"].iloc[1:].to_numpy() + samples["power_w"].iloc[:-1].to_numpy()
     ) / 2
     return float((average_power_w * duration_s.to_numpy()).sum() / 3600)
+
+
+def summarize_flight(telemetry: pd.DataFrame) -> dict:
+    """Summarize energy and duration for one flight."""
+    if telemetry.empty:
+        raise ValueError("Cannot summarize an empty flight")
+    power_w = calculate_power(telemetry["battery_voltage"], telemetry["battery_current"])
+    duration_s = float(telemetry["time"].max() - telemetry["time"].min())
+    energy_wh = calculate_energy_wh(telemetry["time"], power_w)
+    mean_power_w = energy_wh * 3600 / duration_s if duration_s > 0 else 0.0
+    return {
+        "duration_s": duration_s,
+        "energy_wh": energy_wh,
+        "mean_power_w": mean_power_w,
+        "sample_count": len(telemetry),
+    }
