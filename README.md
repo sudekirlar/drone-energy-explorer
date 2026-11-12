@@ -3,7 +3,7 @@
 **Live app:** _link added after the first deployment_
 
 CEN445 Introduction to Data Visualization · Çukurova University · Fall 2026
-Team: Sude Kırlar, İlayda Demir, Pelin
+Team: Sude Kırlar, İlayda Demir, Pelin Gül Kızılkılıç
 
 > How do payload, cruise speed and altitude shape the energy a delivery drone spends,
 > and where in the flight does that energy go?
