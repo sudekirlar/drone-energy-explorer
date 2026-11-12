@@ -12,7 +12,6 @@ from src.sections import (
 )
 from src.theme import apply_theme
 
-
 # ==================================================
 # PAGE CONFIGURATION
 # ==================================================
@@ -38,6 +37,7 @@ st.markdown(
 # DATA LOADING
 # ==================================================
 
+
 @st.cache_data(show_spinner="Loading flight data...")
 def get_flight_data():
     """Load validated flight-level data."""
@@ -58,7 +58,8 @@ if data.empty:
 if "is_synthetic" in data.columns and data["is_synthetic"].any():
     st.warning(
         "⚠️ **Demo Mode:** No CSV dataset was found in `data/`. "
-        "Displaying synthetic placeholder data. Add `data/flight_summary.csv` to use real flight records."
+        "Displaying synthetic placeholder data. "
+        "Add `data/flight_summary.csv` to use real flight records."
     )
 
 

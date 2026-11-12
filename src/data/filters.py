@@ -1,11 +1,11 @@
 """Immutable FilterState and shared apply_filters() logic."""
 
 from dataclasses import dataclass
-from typing import Optional, Tuple
+
 import pandas as pd
 
 
-def _resolve_column(df: pd.DataFrame, candidates: Tuple[str, ...]) -> Optional[str]:
+def _resolve_column(df: pd.DataFrame, candidates: tuple[str, ...]) -> str | None:
     for col in candidates:
         if col in df.columns:
             return col
@@ -14,9 +14,9 @@ def _resolve_column(df: pd.DataFrame, candidates: Tuple[str, ...]) -> Optional[s
 
 @dataclass(frozen=True)
 class FilterState:
-    payloads: Tuple = ()
-    altitudes: Tuple = ()
-    speeds: Tuple = ()
+    payloads: tuple = ()
+    altitudes: tuple = ()
+    speeds: tuple = ()
     hide_flagged: bool = False
     include_other_routes: bool = True
 
@@ -26,7 +26,9 @@ class FilterState:
         alt_col = _resolve_column(df, ("target_altitude", "altitude"))
         speed_col = _resolve_column(df, ("target_speed", "speed"))
 
-        payload_opts = tuple(sorted(df[payload_col].dropna().unique().tolist())) if payload_col else ()
+        payload_opts = (
+            tuple(sorted(df[payload_col].dropna().unique().tolist())) if payload_col else ()
+        )
         alt_opts = tuple(sorted(df[alt_col].dropna().unique().tolist())) if alt_col else ()
         speed_opts = tuple(sorted(df[speed_col].dropna().unique().tolist())) if speed_col else ()
 

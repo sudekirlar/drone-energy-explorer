@@ -35,7 +35,10 @@ def render(df: pd.DataFrame, filters: FilterState) -> None:
             labels={payload_col: "Payload (g)", "total_energy_wh": "Total Energy (Wh)"},
             title="Total Energy Distribution by Payload",
         )
-        return fig, "Higher payload mass consistently shifts median total energy consumption upward."
+        return (
+            fig,
+            "Higher payload mass consistently shifts median total energy consumption upward.",
+        )
 
     def chart_by_route(data: pd.DataFrame):
         fig = px.bar(
@@ -47,7 +50,10 @@ def render(df: pd.DataFrame, filters: FilterState) -> None:
             labels={"route": "Route", "total_energy_wh": "Mean Energy (Wh)"},
             title="Mean Energy Consumption by Route",
         )
-        return fig, "Route variations reflect differences in trajectory length and maneuver profiles."
+        return (
+            fig,
+            "Route variations reflect differences in trajectory length and maneuver profiles.",
+        )
 
     render_example_card(
         title="Energy Summary Explorer",
