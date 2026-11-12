@@ -75,3 +75,12 @@ def summarize_time_gaps(time_s: pd.Series, threshold_s: float = 1.0) -> dict:
         "max_gap_s": float(gaps.max()) if not gaps.empty else 0.0,
         "large_gap_count": int((gaps > threshold_s).sum()),
     }
+
+
+def calculate_relative_altitude(position_z: pd.Series) -> pd.Series:
+    """Calculate altitude relative to the first valid position sample."""
+    altitude = pd.to_numeric(position_z, errors="coerce")
+    first_valid = altitude.first_valid_index()
+    if first_valid is None:
+        return altitude
+    return altitude - altitude.loc[first_valid]

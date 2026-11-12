@@ -107,3 +107,13 @@ def test_flight_summary_includes_time_gap_quality():
     assert abs(result["max_gap_s"] - 2.0) < 1e-9
     assert result["large_gap_count"] == 1
     assert abs(result["energy_wh"] - (120 * 2.2 / 3600)) < 1e-9
+
+
+def test_calculate_relative_altitude():
+    """Calculate altitude relative to the first valid sample."""
+    from src.data.preprocess import calculate_relative_altitude
+
+    altitude = pd.Series([float("nan"), 270.0, 295.0, 268.0])
+    result = calculate_relative_altitude(altitude)
+    assert pd.isna(result.iloc[0])
+    assert result.iloc[1:].tolist() == [0.0, 25.0, -2.0]
