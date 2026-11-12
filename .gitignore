@@ -1,0 +1,26 @@
+# ---- data -------------------------------------------------------------
+# Raw CMU files (~102 MB flights.csv, ROS bags) never go into git.
+# Only data/raw/README.md is tracked so everyone knows what to put there.
+data/raw/*
+!data/raw/README.md
+*.bag
+
+# ---- python -----------------------------------------------------------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+*.egg-info/
+
+# ---- IDE / OS ---------------------------------------------------------
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# ---- secrets ----------------------------------------------------------
+.env
+.streamlit/secrets.toml

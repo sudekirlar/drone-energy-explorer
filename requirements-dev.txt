@@ -1,0 +1,6 @@
+# Local development only (tests, linting, git hooks). Not installed on Streamlit Cloud.
+-r requirements.txt
+pytest==9.2.0
+ruff==0.17.4
+pre-commit==4.7.0
+ipykernel

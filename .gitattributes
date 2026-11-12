@@ -1,0 +1,4 @@
+# Same line endings for everyone (Windows and macOS teammates)
+* text=auto eol=lf
+*.parquet binary
+*.png binary
