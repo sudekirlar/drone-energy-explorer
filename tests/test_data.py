@@ -88,3 +88,22 @@ def test_summarize_time_gaps():
     assert abs(result["max_gap_s"] - 2.0) < 1e-9
     assert result["large_gap_count"] == 1
     assert summarize_time_gaps(pd.Series([0.0])) == {"max_gap_s": 0.0, "large_gap_count": 0}
+
+
+def test_flight_summary_includes_time_gap_quality():
+    """Include sampling-gap quality metrics in flight summaries."""
+    from src.data.preprocess import summarize_flights
+
+    telemetry = pd.DataFrame(
+        {
+            "flight": [1, 1, 1],
+            "route": ["R1"] * 3,
+            "time": [0.0, 0.2, 2.2],
+            "battery_voltage": [12] * 3,
+            "battery_current": [10] * 3,
+        }
+    )
+    result = summarize_flights(telemetry).iloc[0]
+    assert abs(result["max_gap_s"] - 2.0) < 1e-9
+    assert result["large_gap_count"] == 1
+    assert abs(result["energy_wh"] - (120 * 2.2 / 3600)) < 1e-9

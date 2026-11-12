@@ -31,11 +31,13 @@ def summarize_flight(telemetry: pd.DataFrame) -> dict:
     duration_s = float(telemetry["time"].max() - telemetry["time"].min())
     energy_wh = calculate_energy_wh(telemetry["time"], power_w)
     mean_power_w = energy_wh * 3600 / duration_s if duration_s > 0 else 0.0
+    gap_summary = summarize_time_gaps(telemetry["time"])
     return {
         "duration_s": duration_s,
         "energy_wh": energy_wh,
         "mean_power_w": mean_power_w,
         "sample_count": len(telemetry),
+        **gap_summary,
     }
 
 
@@ -46,7 +48,17 @@ def summarize_flights(telemetry: pd.DataFrame) -> pd.DataFrame:
         summary = summarize_flight(group)
         rows.append({"flight": flight, "route": route, **summary})
     return pd.DataFrame(
-        rows, columns=["flight", "route", "duration_s", "energy_wh", "mean_power_w", "sample_count"]
+        rows,
+        columns=[
+            "flight",
+            "route",
+            "duration_s",
+            "energy_wh",
+            "mean_power_w",
+            "sample_count",
+            "max_gap_s",
+            "large_gap_count",
+        ],
     )
 
 
