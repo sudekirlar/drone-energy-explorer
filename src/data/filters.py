@@ -1,49 +1,77 @@
+"""Immutable FilterState and shared apply_filters() logic."""
+
 from dataclasses import dataclass
+from typing import Optional, Tuple
 import pandas as pd
 
-def _col(columns, names):
-    return next((n for n in names if n in columns), None)
 
-def _values(df, col):
-    if not col: return []
-    vals = df[col].dropna().unique().tolist()
-    try: return sorted(vals)
-    except TypeError: return sorted(vals, key=str)
+def _resolve_column(df: pd.DataFrame, candidates: Tuple[str, ...]) -> Optional[str]:
+    for col in candidates:
+        if col in df.columns:
+            return col
+    return None
+
 
 @dataclass(frozen=True)
 class FilterState:
-    payloads: tuple = ()
-    altitudes: tuple = ()
-    speeds: tuple = ()
+    payloads: Tuple = ()
+    altitudes: Tuple = ()
+    speeds: Tuple = ()
     hide_flagged: bool = False
     include_other_routes: bool = True
 
     @classmethod
-    def from_dataframe(cls, df):
-        return cls(tuple(_values(df, _col(df.columns, ('payload','payload_g','Payload')))),
-                   tuple(_values(df, _col(df.columns, ('target_altitude','altitude','altitude_m','Altitude')))),
-                   tuple(_values(df, _col(df.columns, ('target_speed','speed','speed_ms','Speed')))))
-    @property
-    def payload_options(self): return list(self.payloads)
-    @property
-    def altitude_options(self): return list(self.altitudes)
-    @property
-    def speed_options(self): return list(self.speeds)
+    def from_dataframe(cls, df: pd.DataFrame) -> "FilterState":
+        payload_col = _resolve_column(df, ("payload_g", "payload"))
+        alt_col = _resolve_column(df, ("target_altitude", "altitude"))
+        speed_col = _resolve_column(df, ("target_speed", "speed"))
 
-def apply_filters(df, state):
-    out = df.copy()
-    specs = [
-        (('payload','payload_g','Payload'), state.payloads),
-        (('target_altitude','altitude','altitude_m','Altitude'), state.altitudes),
-        (('target_speed','speed','speed_ms','Speed'), state.speeds),
-    ]
-    for aliases, selected in specs:
-        col = _col(out.columns, aliases)
-        if col and selected: out = out[out[col].isin(selected)]
-    route = _col(out.columns, ('route','route_id','Route'))
-    if route and not state.include_other_routes: out = out[out[route].astype(str).str.upper().eq('R1')]
-    flag = _col(out.columns, ('flagged','is_flagged','data_flagged'))
-    if flag and state.hide_flagged:
-        vals = out[flag]
-        out = out[~vals] if vals.dtype == bool else out[~vals.astype(str).str.lower().isin(('1','true','yes','flagged'))]
-    return out.reset_index(drop=True)
+        payload_opts = tuple(sorted(df[payload_col].dropna().unique().tolist())) if payload_col else ()
+        alt_opts = tuple(sorted(df[alt_col].dropna().unique().tolist())) if alt_col else ()
+        speed_opts = tuple(sorted(df[speed_col].dropna().unique().tolist())) if speed_col else ()
+
+        return cls(
+            payloads=payload_opts,
+            altitudes=alt_opts,
+            speeds=speed_opts,
+            hide_flagged=False,
+            include_other_routes=True,
+        )
+
+    @property
+    def payload_options(self) -> list:
+        return list(self.payloads)
+
+    @property
+    def altitude_options(self) -> list:
+        return list(self.altitudes)
+
+    @property
+    def speed_options(self) -> list:
+        return list(self.speeds)
+
+
+def apply_filters(df: pd.DataFrame, filters: FilterState) -> pd.DataFrame:
+    """Filter the dataframe using FilterState with column alias support."""
+    filtered = df.copy()
+
+    payload_col = _resolve_column(filtered, ("payload_g", "payload"))
+    if payload_col and filters.payloads:
+        filtered = filtered[filtered[payload_col].isin(filters.payloads)]
+
+    alt_col = _resolve_column(filtered, ("target_altitude", "altitude"))
+    if alt_col and filters.altitudes:
+        filtered = filtered[filtered[alt_col].isin(filters.altitudes)]
+
+    speed_col = _resolve_column(filtered, ("target_speed", "speed"))
+    if speed_col and filters.speeds:
+        filtered = filtered[filtered[speed_col].isin(filters.speeds)]
+
+    if filters.hide_flagged and "flagged" in filtered.columns:
+        filtered = filtered[~filtered["flagged"].astype(bool)]
+
+    if not filters.include_other_routes and "route" in filtered.columns:
+        other_routes = {"R2", "R3", "R4", "R5", "R6", "R7"}
+        filtered = filtered[~filtered["route"].astype(str).isin(other_routes)]
+
+    return filtered
