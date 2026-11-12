@@ -1,58 +1,48 @@
-"""Multivariate & ML section for Drone Delivery Energy Explorer."""
+"""Multivariate Analysis & ML section (owner: UI & ML)."""
+
+from __future__ import annotations
 
 import pandas as pd
 import plotly.express as px
 import streamlit as st
 from sklearn.ensemble import RandomForestRegressor
 
-from src.data.filters import FilterState
 from src.theme import PALETTES
 
 
-def render(df: pd.DataFrame, filters: FilterState) -> None:
-    """Render Multivariate correlations and feature importance."""
-    st.markdown("### Multivariate Analysis & Feature Importance")
+def render(tables: dict[str, pd.DataFrame]) -> None:
+    """Render Multivariate correlations and baseline feature importance."""
+    flights = tables["flights"]
+    st.markdown("### Multivariate Analysis & ML")
 
-    feature_candidates = [
-        "payload_g",
-        "target_altitude",
-        "target_speed",
-        "wind_speed",
-        "duration_s",
-    ]
-    available_features = [c for c in feature_candidates if c in df.columns]
-
-    if len(available_features) < 2 or "total_energy_wh" not in df.columns:
-        st.info("Insufficient numeric columns for multivariate modeling.")
-        return
+    features = ["payload_g", "speed_mps", "altitude_m", "mean_airspeed_mps", "duration_s"]
+    target = "cruise_power_w" if "cruise_power_w" in flights.columns else "mean_power_w"
+    available = [c for c in features if c in flights.columns]
 
     col1, col2 = st.columns(2)
 
     with col1:
-        corr = df[available_features + ["total_energy_wh"]].corr()
+        corr = flights[available + [target]].corr()
         fig_corr = px.imshow(
             corr,
             text_auto=".2f",
             color_continuous_scale=PALETTES["diverging"],
             zmin=-1,
             zmax=1,
-            title="Feature Correlation Matrix",
+            title="Correlation across flight parameters and cruise power",
         )
-        st.plotly_chart(fig_corr, use_container_width=True)
+        st.plotly_chart(fig_corr, key="ml_corr_heatmap")
 
     with col2:
-        clean_df = df[available_features + ["total_energy_wh"]].dropna()
+        clean_df = flights[available + [target]].dropna()
         if len(clean_df) >= 10:
-            X = clean_df[available_features]
-            y = clean_df["total_energy_wh"]
+            X = clean_df[available]
+            y = clean_df[target]
             model = RandomForestRegressor(n_estimators=100, random_state=42)
             model.fit(X, y)
 
             imp_df = pd.DataFrame(
-                {
-                    "Feature": available_features,
-                    "Importance": model.feature_importances_,
-                }
+                {"Feature": available, "Importance": model.feature_importances_}
             ).sort_values("Importance", ascending=True)
 
             fig_imp = px.bar(
@@ -62,8 +52,8 @@ def render(df: pd.DataFrame, filters: FilterState) -> None:
                 orientation="h",
                 color="Importance",
                 color_continuous_scale=PALETTES["viridis"],
-                title="Random Forest Feature Importance (Target: Total Energy)",
+                title=f"Random Forest feature importance (target: {target})",
             )
-            st.plotly_chart(fig_imp, use_container_width=True)
+            st.plotly_chart(fig_imp, key="ml_rf_importance")
         else:
-            st.warning("Not enough rows after filtering to fit the model.")
+            st.warning("Not enough rows after filtering to fit the baseline model.")

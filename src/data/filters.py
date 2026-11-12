@@ -1,79 +1,92 @@
-"""Immutable FilterState and shared apply_filters() logic."""
+"""Immutable FilterState and shared filtering across all schema tables."""
+
+from __future__ import annotations
 
 from dataclasses import dataclass
 
 import pandas as pd
 
 
-def _resolve_column(df: pd.DataFrame, candidates: tuple[str, ...]) -> str | None:
-    for col in candidates:
-        if col in df.columns:
-            return col
-    return None
-
-
 @dataclass(frozen=True)
 class FilterState:
-    payloads: tuple = ()
-    altitudes: tuple = ()
-    speeds: tuple = ()
-    hide_flagged: bool = False
+    payloads: tuple[int, ...] = ()
+    altitudes: tuple[float, ...] = ()
+    speeds: tuple[int, ...] = ()
+    include_missing_altitude: bool = True
+    hide_outliers: bool = False
     include_other_routes: bool = True
 
     @classmethod
-    def from_dataframe(cls, df: pd.DataFrame) -> "FilterState":
-        payload_col = _resolve_column(df, ("payload_g", "payload"))
-        alt_col = _resolve_column(df, ("target_altitude", "altitude"))
-        speed_col = _resolve_column(df, ("target_speed", "speed"))
-
-        payload_opts = (
-            tuple(sorted(df[payload_col].dropna().unique().tolist())) if payload_col else ()
-        )
-        alt_opts = tuple(sorted(df[alt_col].dropna().unique().tolist())) if alt_col else ()
-        speed_opts = tuple(sorted(df[speed_col].dropna().unique().tolist())) if speed_col else ()
-
+    def from_flights(cls, flights: pd.DataFrame) -> FilterState:
+        payload_opts = tuple(sorted(int(x) for x in flights["payload_g"].dropna().unique()))
+        alt_opts = tuple(sorted(float(x) for x in flights["altitude_m"].dropna().unique()))
+        speed_opts = tuple(sorted(int(x) for x in flights["speed_mps"].dropna().unique()))
         return cls(
             payloads=payload_opts,
             altitudes=alt_opts,
             speeds=speed_opts,
-            hide_flagged=False,
+            include_missing_altitude=True,
+            hide_outliers=False,
             include_other_routes=True,
         )
 
     @property
-    def payload_options(self) -> list:
+    def payload_options(self) -> list[int]:
         return list(self.payloads)
 
     @property
-    def altitude_options(self) -> list:
+    def altitude_options(self) -> list[float]:
         return list(self.altitudes)
 
     @property
-    def speed_options(self) -> list:
+    def speed_options(self) -> list[int]:
         return list(self.speeds)
 
 
-def apply_filters(df: pd.DataFrame, filters: FilterState) -> pd.DataFrame:
-    """Filter the dataframe using FilterState with column alias support."""
-    filtered = df.copy()
+def filter_flights(flights: pd.DataFrame, state: FilterState) -> pd.DataFrame:
+    """Apply sidebar filters to the flight-level table."""
+    mask = pd.Series(True, index=flights.index)
 
-    payload_col = _resolve_column(filtered, ("payload_g", "payload"))
-    if payload_col and filters.payloads:
-        filtered = filtered[filtered[payload_col].isin(filters.payloads)]
+    if state.payloads:
+        mask &= flights["payload_g"].isin(state.payloads)
+    else:
+        mask &= False
 
-    alt_col = _resolve_column(filtered, ("target_altitude", "altitude"))
-    if alt_col and filters.altitudes:
-        filtered = filtered[filtered[alt_col].isin(filters.altitudes)]
+    if state.altitudes:
+        alt_match = flights["altitude_m"].isin(state.altitudes)
+        if state.include_missing_altitude:
+            alt_match |= flights["altitude_m"].isna()
+        mask &= alt_match
+    elif state.include_missing_altitude:
+        mask &= flights["altitude_m"].isna()
+    else:
+        mask &= False
 
-    speed_col = _resolve_column(filtered, ("target_speed", "speed"))
-    if speed_col and filters.speeds:
-        filtered = filtered[filtered[speed_col].isin(filters.speeds)]
+    if state.speeds:
+        mask &= flights["speed_mps"].isin(state.speeds)
+    else:
+        mask &= False
 
-    if filters.hide_flagged and "flagged" in filtered.columns:
-        filtered = filtered[~filtered["flagged"].astype(bool)]
+    if state.hide_outliers and "is_outlier" in flights.columns:
+        mask &= ~flights["is_outlier"].astype(bool)
 
-    if not filters.include_other_routes and "route" in filtered.columns:
-        other_routes = {"R2", "R3", "R4", "R5", "R6", "R7"}
-        filtered = filtered[~filtered["route"].astype(str).isin(other_routes)]
+    if not state.include_other_routes and "route" in flights.columns:
+        mask &= flights["route"] == "R1"
 
-    return filtered
+    return flights.loc[mask].reset_index(drop=True)
+
+
+def apply_filters(tables: dict[str, pd.DataFrame], state: FilterState) -> dict[str, pd.DataFrame]:
+    """Filter flights and cascade matching flight IDs to all flight-indexed tables."""
+    filtered_flights = filter_flights(tables["flights"], state)
+    valid_flights = set(filtered_flights["flight"].tolist())
+
+    result: dict[str, pd.DataFrame] = {"flights": filtered_flights}
+    for name, df in tables.items():
+        if name == "flights":
+            continue
+        if "flight" in df.columns:
+            result[name] = df[df["flight"].isin(valid_flights)].reset_index(drop=True)
+        else:
+            result[name] = df.copy()
+    return result
