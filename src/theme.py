@@ -1,8 +1,11 @@
-"""Visual theme, palettes, and Plotly template for Drone Delivery Energy Explorer."""
+"""Visual theme, palettes, and Plotly template (pure Python, no Streamlit)."""
+
+from __future__ import annotations
 
 import plotly.graph_objects as go
 import plotly.io as pio
-import streamlit as st
+
+from src.data import schema
 
 PALETTES = {
     "viridis": [
@@ -14,35 +17,50 @@ PALETTES = {
         "#fde725",
     ],
     "phase": {
-        "Takeoff": "#2a788e",
-        "Climb": "#414487",
+        "Ground": "#8c969e",
+        "Take-off": "#2a788e",
         "Cruise": "#22a884",
-        "Descent": "#7ad151",
-        "Landing": "#fde725",
-        "Hover": "#440154",
+        "Manoeuvre": "#414487",
+        "Landing": "#d95f02",
+    },
+    "sub_phase": {
+        "Ground": "#8c969e",
+        "Spool-up": "#56b4e9",
+        "Climb": "#2a788e",
+        "Straight leg": "#22a884",
+        "Sloped cruise": "#66c2a5",
+        "WP turn": "#414487",
+        "Speed change": "#7570b3",
+        "Descent": "#d95f02",
     },
     "payload": {
-        0: "#22a884",
-        250: "#2a788e",
-        500: "#414487",
-        750: "#440154",
+        0: "#bdd7e7",
+        250: "#6baed6",
+        500: "#3182bd",
+        750: "#08519c",
     },
     "categorical": [
         "#2a788e",
         "#22a884",
         "#414487",
-        "#7ad151",
-        "#440154",
         "#e66101",
+        "#7570b3",
+        "#66a61e",
+        "#a6761d",
     ],
     "diverging": [
-        "#440154",
-        "#3b528b",
-        "#21918c",
-        "#5ec962",
-        "#fde725",
+        "#2166ac",
+        "#67a9cf",
+        "#d1e5f0",
+        "#e0e0e0",
+        "#fddbc7",
+        "#ef8a62",
+        "#b2182b",
     ],
 }
+
+assert set(PALETTES["phase"]) == set(schema.PHASES)
+assert set(PALETTES["sub_phase"]) == set(schema.SUB_PHASES)
 
 
 def get_plotly_template() -> go.layout.Template:
@@ -64,18 +82,7 @@ def get_plotly_template() -> go.layout.Template:
 plotly_template = get_plotly_template()
 
 
-def apply_theme() -> None:
-    """Register the shared Plotly template and apply clean spacing."""
+def register_plotly_template() -> None:
+    """Register and activate the shared Plotly template."""
     pio.templates["drone_explorer"] = plotly_template
     pio.templates.default = "drone_explorer"
-    st.markdown(
-        """
-        <style>
-        .block-container {
-            padding-top: 2rem;
-            padding-bottom: 2rem;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )

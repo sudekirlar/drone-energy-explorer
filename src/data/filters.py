@@ -1,4 +1,4 @@
-"""Immutable FilterState and shared filtering across all schema tables."""
+"""Immutable FilterState and shared filtering across all contract tables."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ class FilterState:
     speeds: tuple[int, ...] = ()
     include_missing_altitude: bool = True
     hide_outliers: bool = False
-    include_other_routes: bool = True
+    include_other_routes: bool = False
 
     @classmethod
     def from_flights(cls, flights: pd.DataFrame) -> FilterState:
@@ -27,7 +27,7 @@ class FilterState:
             speeds=speed_opts,
             include_missing_altitude=True,
             hide_outliers=False,
-            include_other_routes=True,
+            include_other_routes=False,
         )
 
     @property
@@ -44,7 +44,7 @@ class FilterState:
 
 
 def filter_flights(flights: pd.DataFrame, state: FilterState) -> pd.DataFrame:
-    """Apply sidebar filters to the flight-level table."""
+    """Filter the flights table using exact contract column names."""
     mask = pd.Series(True, index=flights.index)
 
     if state.payloads:
@@ -67,17 +67,17 @@ def filter_flights(flights: pd.DataFrame, state: FilterState) -> pd.DataFrame:
     else:
         mask &= False
 
-    if state.hide_outliers and "is_outlier" in flights.columns:
+    if state.hide_outliers:
         mask &= ~flights["is_outlier"].astype(bool)
 
-    if not state.include_other_routes and "route" in flights.columns:
+    if not state.include_other_routes:
         mask &= flights["route"] == "R1"
 
     return flights.loc[mask].reset_index(drop=True)
 
 
 def apply_filters(tables: dict[str, pd.DataFrame], state: FilterState) -> dict[str, pd.DataFrame]:
-    """Filter flights and cascade matching flight IDs to all flight-indexed tables."""
+    """Filter flights and keep matching flight rows across all loaded tables."""
     filtered_flights = filter_flights(tables["flights"], state)
     valid_flights = set(filtered_flights["flight"].tolist())
 

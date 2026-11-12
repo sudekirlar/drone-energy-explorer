@@ -13,10 +13,10 @@ from src.sections import (
     multivariate_ml,
     overview,
 )
-from src.theme import apply_theme
+from src.theme import register_plotly_template
 
 # ==================================================
-# PAGE CONFIGURATION
+# PAGE CONFIGURATION & THEME
 # ==================================================
 
 st.set_page_config(
@@ -25,7 +25,19 @@ st.set_page_config(
     layout="wide",
 )
 
-apply_theme()
+register_plotly_template()
+
+st.markdown(
+    """
+    <style>
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 
 # ==================================================
@@ -48,17 +60,14 @@ sample_tables: list[str] = []
 
 try:
     for table_name in schema.TABLES:
-        if loader.table_source(table_name) is not None:
+        source = loader.table_source(table_name)
+        if source is not None:
             tables[table_name] = get_table(table_name)
-            if loader.table_source(table_name) == "sample":
+            if source == "sample":
                 sample_tables.append(table_name)
-except Exception as error:
-    st.error("Failed to load data tables against the contract.")
-    st.exception(error)
-    st.stop()
-
-if "flights" not in tables or tables["flights"].empty:
-    st.warning("The flights table is missing or empty.")
+except loader.SchemaError as error:
+    st.error("Loaded data does not match the data contract.")
+    st.caption(str(error))
     st.stop()
 
 header_col, badge_col = st.columns([5, 1])
@@ -70,6 +79,10 @@ with header_col:
 with badge_col:
     if sample_tables:
         st.caption("🟡 **sample data**")
+
+if "flights" not in tables or tables["flights"].empty:
+    st.info("Sample tables are coming with T5. Add contract tables under `data/` to explore.")
+    st.stop()
 
 
 # ==================================================
@@ -107,8 +120,8 @@ with st.sidebar:
     )
 
     include_other_routes = st.checkbox(
-        "Include other routes (R2–R7)",
-        value=True,
+        "Include R2–R7",
+        value=False,
     )
 
 filter_state = FilterState(
