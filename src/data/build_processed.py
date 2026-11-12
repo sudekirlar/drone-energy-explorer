@@ -34,7 +34,7 @@ def gps_distance_m(lat: np.ndarray, lon: np.ndarray) -> float:
 def build() -> None:
     OUTPUT.mkdir(parents=True, exist_ok=True)
 
-    raw = pd.read_csv(RAW / "flights.csv")
+    raw = pd.read_csv(RAW / "flights.csv", low_memory=False)
     params = pd.read_csv(RAW / "parameters.csv")
 
     raw = raw.loc[raw["route"].isin(ROUTES)].copy()
@@ -82,7 +82,23 @@ def build() -> None:
 
         target_alt = pd.to_numeric(pd.Series([param["altitude"]]), errors="coerce").iloc[0]
 
-        start_time = pd.to_datetime(f"{param['date']} {param['local_time']}", errors="coerce")
+        # Inferred corrections based on neighbouring flight timestamps.
+        # Preserve the original value in local_time_raw.
+        time_corrections = {
+            108: "10:31",
+            112: "11:06",
+            150: "15:10",
+            173: "12:17",
+        }
+
+        original_time = str(param.local_time)
+        corrected_time = time_corrections.get(int(flight_id), original_time)
+        time_corrected = corrected_time != original_time
+
+        start_time = pd.to_datetime(
+            f"{param.date} {corrected_time}",
+            errors="coerce",
+        )
 
         flight_rows.append(
             {
@@ -94,7 +110,7 @@ def build() -> None:
                 "variable_altitude": bool(pd.isna(target_alt)),
                 "start_time": start_time,
                 "local_time_raw": str(param["local_time"]),
-                "time_corrected": False,
+                "time_corrected": time_corrected,
                 "in_design": bool(
                     param["route"] == "R1"
                     and param["payload"] in (0, 250, 500)
@@ -162,6 +178,31 @@ def build() -> None:
 
     flights = pd.DataFrame(flight_rows)
     telemetry = pd.concat(telemetry_rows, ignore_index=True)
+    # Joint deviation across flight-level measures (D4).
+    # Compare repeated flights under the same experimental conditions.
+    design_mask = (flights["route"] == "R1") & flights["in_design"]
+    design = flights.loc[design_mask].copy()
+
+    keys = ["payload_g", "speed_mps", "altitude_m"]
+    measures = ["energy_wh", "duration_s", "mean_power_w"]
+    grouped = design.groupby(keys)
+
+    deviations = pd.DataFrame(
+        {col: design[col] - grouped[col].transform("median") for col in measures},
+        index=design.index,
+    )
+
+    scales = deviations.abs().median().replace(0, np.nan)
+    joint_scores = np.sqrt(((deviations / scales) ** 2).sum(axis=1))
+
+    q1, q3 = joint_scores.quantile([0.25, 0.75])
+    threshold = q3 + 1.5 * (q3 - q1)
+    outlier_indices = joint_scores[joint_scores > threshold].index
+
+    flights.loc[outlier_indices, "is_outlier"] = True
+    flights.loc[outlier_indices, "outlier_reason"] = (
+        "Joint deviation in energy, duration and mean power"
+    )
 
     flights.to_parquet(OUTPUT / "flights_data.parquet", index=False)
     telemetry.to_parquet(OUTPUT / "telemetry_data_1hz.parquet", index=False)
@@ -185,6 +226,31 @@ def build() -> None:
             "rows_affected": int((raw["battery_current"] < 0).sum()),
             "flights_affected": int(raw.loc[raw["battery_current"] < 0, "flight"].nunique()),
             "iso25012": "Accuracy",
+        },
+        {
+            "rule_id": "inferred-time-correction",
+            "description": (
+                "Correct four likely clock transcription errors using "
+                "neighbouring flight times; preserve original times. "
+                "Corrections are inferred, not independently verified."
+            ),
+            "rows_affected": int(flights["time_corrected"].sum()),
+            "flights_affected": int(flights["time_corrected"].sum()),
+            "iso25012": "Accuracy",
+        },
+        {
+            "rule_id": "joint-deviation-outliers",
+            "description": (
+                "Flag R1 design flights using group-median deviations "
+                "in energy, duration and mean power, scaled by global "
+                "median absolute deviations and thresholded at "
+                "Q3 + 1.5*IQR. Flights are retained. "
+                "This implementation flags 15 flights; D4 reports "
+                "4 using an unspecified formula, so results differ."
+            ),
+            "rows_affected": int(flights["is_outlier"].sum()),
+            "flights_affected": int(flights["is_outlier"].sum()),
+            "iso25012": "Consistency",
         },
     ]
 
