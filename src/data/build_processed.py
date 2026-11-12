@@ -149,8 +149,8 @@ def build() -> None:
                 "course_deg": (
                     np.degrees(
                         np.arctan2(
-                            group["velocity_x"].to_numpy(dtype=float),
-                            group["velocity_y"].to_numpy(dtype=float),
+                            np.diff(east, prepend=east[0]),
+                            np.diff(north, prepend=north[0]),
                         )
                     )
                     + 360
