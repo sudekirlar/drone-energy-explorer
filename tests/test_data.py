@@ -47,3 +47,23 @@ def test_summarize_flight_rejects_empty_data():
 
     with pytest.raises(ValueError, match="empty flight"):
         summarize_flight(pd.DataFrame())
+
+
+def test_summarize_flights_groups_separately():
+    """Summarize each flight independently."""
+    from src.data.preprocess import summarize_flights
+
+    telemetry = pd.DataFrame(
+        {
+            "flight": [1, 1, 2, 2],
+            "route": ["R1", "R1", "R2", "R2"],
+            "time": [0, 30, 0, 30],
+            "battery_voltage": [12, 12, 12, 12],
+            "battery_current": [10, 10, 20, 20],
+        }
+    )
+    result = summarize_flights(telemetry).set_index("flight")
+    assert len(result) == 2
+    assert abs(result.loc[1, "energy_wh"] - 1.0) < 1e-9
+    assert abs(result.loc[2, "energy_wh"] - 2.0) < 1e-9
+    assert result["sample_count"].tolist() == [2, 2]

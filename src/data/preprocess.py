@@ -37,3 +37,14 @@ def summarize_flight(telemetry: pd.DataFrame) -> dict:
         "mean_power_w": mean_power_w,
         "sample_count": len(telemetry),
     }
+
+
+def summarize_flights(telemetry: pd.DataFrame) -> pd.DataFrame:
+    """Summarize energy and duration for every route-flight pair."""
+    rows = []
+    for (flight, route), group in telemetry.groupby(["flight", "route"], sort=True):
+        summary = summarize_flight(group)
+        rows.append({"flight": flight, "route": route, **summary})
+    return pd.DataFrame(
+        rows, columns=["flight", "route", "duration_s", "energy_wh", "mean_power_w", "sample_count"]
+    )
