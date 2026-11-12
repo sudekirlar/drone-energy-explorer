@@ -25,20 +25,21 @@
 /src/ml/                    @UIML_GH
 
 # Section owners (charts + section file)
-/src/sections/flight_space.py   @DATA_GH
-/src/charts/route_map.py        @DATA_GH
-/src/charts/flight_3d.py        @DATA_GH
-/src/charts/flight_heatmap.py   @DATA_GH
+/src/sections/flight_temporal.py  @DATA_GH
+/src/charts/route_map.py          @DATA_GH
+/src/charts/space_time_cube.py    @DATA_GH
+/src/charts/timeline.py           @DATA_GH
 
-/src/sections/energy_flow.py    @PLATFORM_GH
-/src/charts/treemap.py          @PLATFORM_GH
-/src/charts/sankey.py           @PLATFORM_GH
-/src/charts/current_voltage.py  @PLATFORM_GH
+/src/sections/energy.py           @PLATFORM_GH
+/src/charts/sankey.py             @PLATFORM_GH
+/src/charts/treemap.py            @PLATFORM_GH
+/src/charts/payload_heatmap.py    @PLATFORM_GH
 
 /src/sections/multivariate_ml.py  @UIML_GH
 /src/charts/pcp.py                @UIML_GH
+/src/charts/splom.py              @UIML_GH
 /src/charts/violin.py             @UIML_GH
-/src/charts/ternary.py            @UIML_GH
+/src/charts/flight_heatmap.py     @UIML_GH
 
 # Shared documents
 /README.md                  @PLATFORM_GH @DATA_GH @UIML_GH

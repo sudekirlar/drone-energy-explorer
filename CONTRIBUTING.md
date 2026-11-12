@@ -5,9 +5,12 @@ team's work and every member's contribution is visible.
 
 | Role | Member | Owns | Section (3 charts) |
 |---|---|---|---|
-| Platform | Sude | repo and standards, data contract (`schema.py`, `loader.py`), flight phases, deployment, merge order | Energy Flow: treemap, Sankey, current × voltage |
-| Data | İlayda | sample tables, cleaning and flight summaries (`preprocess.py`), data tests, Overview & Data Quality | Flight & Space: route map, 3D flight path, flight × time heatmap (+ links between them) |
-| UI & ML | Pelin | app frame (`app.py`, menu, sidebar filters), `theme.py`, K-means, Random Forest, Model Card | Multivariate & ML: parallel coordinates, violin + box, ternary |
+| Platform | Sude | repo and standards, data contract (`schema.py`, `loader.py`), flight phases, deployment, merge order | Energy & Experimental Conditions: Sankey, treemap, payload × speed heatmap + RF view |
+| Data | İlayda | sample tables, cleaning and flight summaries (`preprocess.py`), data tests, Overview & Data Quality | Flight & Temporal Analysis: route map, 3D Space-Time Cube, phase-annotated timeline (+ links between them) |
+| UI & ML | Pelin | app frame (`app.py`, menu, sidebar filters), `theme.py`, K-means, Random Forest regression, Model Card | Multivariate Analysis & ML: parallel coordinates, SPLOM, violin + box, flight × time heatmap |
+
+Ten charts in total; the full list, sub-questions and decisions are in the chart guide and in
+`docs/decisions.md`.
 
 ---
 
@@ -53,10 +56,10 @@ Branch name: `<type>/<issue-number>-<short-slug>`
 
 ```
 feat/12-route-map
-feat/16-sankey-energy-budget
+feat/15-sankey-energy-budget
 data/6-cleaning-flight-summaries
-fix/14-heatmap-sort-order
-docs/30-readme
+fix/21-flight-heatmap-sort-order
+docs/31-readme
 ```
 
 Keep a branch to one issue. Small PRs get reviewed fast; a 1,000-line PR on Saturday night will not.
@@ -96,10 +99,10 @@ Co-authored-by: Name <github-email>
 |---|---|
 | Shared / platform | `repo`, `deps`, `ci`, `schema`, `loader`, `phases`, `deploy`, `readme`, `report`, `decisions` |
 | Data | `prep`, `sample`, `tests`, `quality` |
-| UI & ML | `app`, `theme`, `filters`, `kmeans`, `classifier` |
-| Flight & Space charts | `route-map`, `flight-3d`, `flight-heatmap`, `links` |
-| Energy Flow charts | `treemap`, `sankey`, `current-voltage` |
-| Multivariate & ML charts | `pcp`, `violin`, `ternary` |
+| UI & ML | `app`, `theme`, `filters`, `kmeans`, `regressor` |
+| Flight & Temporal charts | `route-map`, `stc`, `timeline`, `links` |
+| Energy & Experimental Conditions charts | `sankey`, `treemap`, `payload-heatmap` |
+| Multivariate & ML charts | `pcp`, `splom`, `violin`, `flight-heatmap` |
 
 ### Examples
 ```
@@ -107,7 +110,8 @@ feat(route-map): colour flight track by instantaneous power
 data(prep): correct four start-time typos and keep raw values
 data(phases): merge segments shorter than 2 s into the previous phase
 feat(sankey): let user group energy by altitude, speed, payload or route
-ml(classifier): report accuracy as mean ± std over 5 seeds
+ml(regressor): report R² and MAE as mean ± std over 5 seeds
+feat(splom): highlight selected flights in every panel
 style(theme): use one tone family per payload class
 fix(filters): keep colour per payload stable when the filter changes
 docs(readme): add contributions table and dataset citation
@@ -144,7 +148,7 @@ automatically.
 
 Daily status message (same time every day, team chat):
 ```
-Yesterday: #16 Sankey three levels done (PR open)
+Yesterday: #15 Sankey three levels done (PR open)
 Today: percent mode + finding text
 Blocked: phase_energy has no "sloped cruise" rows, asked Sude
 ```
@@ -211,12 +215,16 @@ scikit-learn 1.9):
 - Data comes from src/data/loader.py (parquet). Column names and units follow src/data/schema.py
   (unit suffix: power_W, energy_Wh, alt_rel_m). Never read CSV files inside chart code.
 - Colours only from src/theme.py. No rainbow/jet, no pie charts, no dual y-axes, no 3D except the
-  3D flight path.
+  Space-Time Cube.
 - Every figure: message-style title, axis titles with units, legend when >1 series, hover with units.
 - Every Streamlit widget gets a unique key prefixed with the chart scope, e.g. key="pcp_k".
 - pandas 3: copy-on-write is always on; never use chained assignment (df[a][b] = x), use df.loc.
 - Commit messages: Conventional Commits in English, "<type>(<scope>): <imperative subject>" (≤72).
   Types: feat, fix, data, ml, style, refactor, docs, test, chore. Footer "Refs #<issue>".
 - ML: one row per flight; never split telemetry rows randomly between train and test.
-  Flight phases are descriptive features only, never an ML target.
+  K-means on five outcome measures; Random Forest REGRESSION of cruise power from payload, speed,
+  altitude, compared with linear regression. Flight phases are estimated (rule-based), never an
+  ML target.
+- The 'wind_speed' column is airspeed from the anemometer, not wind: label it "airspeed
+  (anemometer)" and keep it out of multivariate charts and models.
 ```
