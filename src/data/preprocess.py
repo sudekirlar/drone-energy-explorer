@@ -48,3 +48,8 @@ def summarize_flights(telemetry: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(
         rows, columns=["flight", "route", "duration_s", "energy_wh", "mean_power_w", "sample_count"]
     )
+
+
+def parse_target_altitude(altitude: pd.Series) -> pd.Series:
+    """Convert single altitudes to numbers; mark multi-level profiles as missing."""
+    return pd.to_numeric(altitude, errors="coerce")

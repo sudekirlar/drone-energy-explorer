@@ -67,3 +67,14 @@ def test_summarize_flights_groups_separately():
     assert abs(result.loc[1, "energy_wh"] - 1.0) < 1e-9
     assert abs(result.loc[2, "energy_wh"] - 2.0) < 1e-9
     assert result["sample_count"].tolist() == [2, 2]
+
+
+def test_parse_target_altitude_preserves_multi_level_profiles():
+    """Convert numeric targets while keeping multi-level profiles missing."""
+    from src.data.preprocess import parse_target_altitude
+
+    altitude = pd.Series(["25", "50", "100", "25-50-100-25"])
+    result = parse_target_altitude(altitude)
+    assert result.iloc[:3].tolist() == [25.0, 50.0, 100.0]
+    assert pd.isna(result.iloc[3])
+    assert altitude.iloc[3] == "25-50-100-25"
