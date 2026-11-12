@@ -24,3 +24,8 @@ Thumbs.db
 # ---- secrets ----------------------------------------------------------
 .env
 .streamlit/secrets.toml
+
+# Generated drone datasets
+/data/intermediate/
+/data/processed/*.parquet
+/data/processed/quality_log.json
