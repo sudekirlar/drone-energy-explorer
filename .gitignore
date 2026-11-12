@@ -24,3 +24,6 @@ Thumbs.db
 # ---- secrets ----------------------------------------------------------
 .env
 .streamlit/secrets.toml
+
+# Generated drone datasets
+/data/intermediate/
