@@ -22,9 +22,9 @@ import sys
 
 # ---- fill in ------------------------------------------------------------------------------------
 GH_USER = {
-    "platform": "SUDE_GITHUB_USERNAME",
-    "data": "ILAYDA_GITHUB_USERNAME",
-    "uiml": "PELIN_GITHUB_USERNAME",
+    "platform": "sudekirlar",
+    "data": "ilayda-demir",
+    "uiml": "Pelingulkizilkilic",
 }
 MILESTONE = "v1.0 submission"
 MILESTONE_DUE = "2026-11-15T20:59:59Z"  # 23:59 Istanbul time
