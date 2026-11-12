@@ -25,4 +25,5 @@ def load_flights() -> pd.DataFrame:
                 return df
 
     from src.data.demo import make_demo_data
+
     return make_demo_data()

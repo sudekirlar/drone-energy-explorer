@@ -27,9 +27,7 @@ def make_demo_data(n_flights: int = 120, seed: int = 42) -> pd.DataFrame:
     duration_s = np.round(rng.uniform(180, 900, size=n_flights), 1)
     distance_m = np.round(speeds * duration_s * rng.uniform(0.85, 1.05, size=n_flights), 1)
 
-    base_power = (
-        180 + 0.08 * payloads + 1.8 * (speeds**1.6) + 0.25 * altitudes + 3.5 * wind_speed
-    )
+    base_power = 180 + 0.08 * payloads + 1.8 * (speeds**1.6) + 0.25 * altitudes + 3.5 * wind_speed
     power_w = np.round(base_power + rng.normal(0, 12, size=n_flights), 2)
     energy_wh = np.round((power_w * duration_s) / 3600.0, 2)
     energy_per_km = np.round(energy_wh / np.maximum(distance_m / 1000.0, 0.1), 2)
