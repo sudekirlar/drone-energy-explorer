@@ -108,3 +108,17 @@ def calculate_distance_m(time_s: pd.Series, ground_speed_mps: pd.Series) -> floa
     dt = samples["time_s"].diff().iloc[1:].to_numpy()
     speeds = samples["speed_mps"].to_numpy()
     return float(((speeds[1:] + speeds[:-1]) / 2 * dt).sum())
+
+
+def summarize_data_quality(telemetry: pd.DataFrame) -> dict:
+    """Summarize basic telemetry quality without modifying the input."""
+    time_s = pd.to_numeric(telemetry["time"], errors="coerce")
+    current_a = pd.to_numeric(telemetry["battery_current"], errors="coerce")
+    return {
+        "row_count": len(telemetry),
+        "missing_value_count": int(telemetry.isna().sum().sum()),
+        "duplicate_row_count": int(telemetry.duplicated().sum()),
+        "invalid_time_count": int(time_s.isna().sum()),
+        "negative_time_count": int((time_s < 0).sum()),
+        "negative_current_count": int((current_a < 0).sum()),
+    }

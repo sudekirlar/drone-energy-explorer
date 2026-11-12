@@ -137,3 +137,18 @@ def test_calculate_distance_m():
     time_s = pd.Series([0.0, 2.0, 5.0])
     speed_mps = pd.Series([2.0, 4.0, 4.0])
     assert calculate_distance_m(time_s, speed_mps) == 18.0
+
+
+def test_summarize_data_quality():
+    from src.data.preprocess import summarize_data_quality
+
+    telemetry = pd.DataFrame(
+        {"time": [0.0, 0.0, -1.0, None], "battery_current": [-0.1, -0.1, 2.0, 3.0]}
+    )
+    result = summarize_data_quality(telemetry)
+    assert result["row_count"] == 4
+    assert result["missing_value_count"] == 1
+    assert result["duplicate_row_count"] == 1
+    assert result["invalid_time_count"] == 1
+    assert result["negative_time_count"] == 1
+    assert result["negative_current_count"] == 2
