@@ -96,3 +96,20 @@ Newest at the bottom. Reference an entry in PRs and the report as `D<n>`.
 - **Alternative:** `st.tabs`.
 - **Why:** `st.tabs` executes every tab on every rerun. With a menu and fragments a card's own control
   reruns only that card.
+
+## D12 · Column names: lowercase, unit at the end
+- **Decision:** every column in the data contract is lowercase snake case with the unit as the last
+  part: `power_w`, `energy_wh`, `wh_per_km`, `alt_rel_m`, `speed_mps`. Raw CMU names
+  (`battery_voltage`, `wind_speed`, ...) are translated only in `preprocess.py`.
+- **Alternative:** units in their SI spelling (`power_W`, `energy_Wh`), as in the first plan.
+- **Why:** the preprocessing code and its tests already used lowercase names; lowercase is the
+  Python convention and what code assistants produce by default; mixing `W` and `w` is an easy
+  mistake to miss. One translation point keeps raw names out of every chart.
+
+## D13 · Loader without Streamlit, caching in the UI layer
+- **Decision:** `src/data/loader.py` reads and validates tables with plain pandas; `@st.cache_data`
+  wraps it in `app.py`. The loader prefers `data/processed/` and falls back to `data/sample/`.
+- **Alternative:** `@st.cache_data` inside `loader.py` (first plan).
+- **Why:** keeps the layer rule (no Streamlit in `src/data`, enforced by a test) and makes the
+  loader testable without a browser. The fallback lets charts start on sample tables and switch
+  to real data without code changes.
