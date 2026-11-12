@@ -57,7 +57,7 @@ Branch name: `<type>/<issue-number>-<short-slug>`
 ```
 feat/12-route-map
 feat/15-sankey-energy-budget
-data/6-cleaning-flight-summaries
+data/1-cleaning-flight-summaries
 fix/21-flight-heatmap-sort-order
 docs/31-readme
 ```

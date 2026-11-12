@@ -1,6 +1,6 @@
 # Drone Delivery Energy Explorer
 
-**Live app:** _link added after the first deployment_
+**Live app:** https://data-energy-explorer.streamlit.app/
 
 CEN445 Introduction to Data Visualization · Çukurova University · Fall 2026
 Team: Sude Kırlar, İlayda Demir, Pelin Gül Kızılkılıç

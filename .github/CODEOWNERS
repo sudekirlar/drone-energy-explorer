@@ -3,44 +3,44 @@
 #   PLATFORM_GH = Sude (Platform)   DATA_GH = İlayda (Data)   UIML_GH = Pelin (UI & ML)
 # Later lines win over earlier ones.
 
-*                           @PLATFORM_GH
+*                           @sudekirlar
 
 # Platform: contract, loading, phases, tooling
-/src/data/schema.py         @PLATFORM_GH
-/src/data/loader.py         @PLATFORM_GH
-/src/data/phases.py         @PLATFORM_GH
-/.github/                   @PLATFORM_GH
-/requirements*.txt          @PLATFORM_GH
+/src/data/schema.py         @sudekirlar
+/src/data/loader.py         @sudekirlar
+/src/data/phases.py         @sudekirlar
+/.github/                   @sudekirlar
+/requirements*.txt          @sudekirlar
 
 # Data: cleaning, tests, data quality
-/src/data/preprocess.py     @DATA_GH
-/tests/test_data.py         @DATA_GH
-/data/                      @DATA_GH
-/src/sections/overview.py   @DATA_GH
+/src/data/preprocess.py     @ilayda-demir
+/tests/test_data.py         @ilayda-demir
+/data/                      @ilayda-demir
+/src/sections/overview.py   @ilayda-demir
 
 # UI & ML: frame, theme, filters, models
-/app.py                     @UIML_GH
-/src/theme.py               @UIML_GH
-/src/data/filters.py        @UIML_GH
-/src/ml/                    @UIML_GH
+/app.py                     @Pelingulkizilkilic
+/src/theme.py               @Pelingulkizilkilic
+/src/data/filters.py        @Pelingulkizilkilic
+/src/ml/                    @Pelingulkizilkilic
 
 # Section owners (charts + section file)
-/src/sections/flight_temporal.py  @DATA_GH
-/src/charts/route_map.py          @DATA_GH
-/src/charts/space_time_cube.py    @DATA_GH
-/src/charts/timeline.py           @DATA_GH
+/src/sections/flight_temporal.py  @ilayda-demir
+/src/charts/route_map.py          @ilayda-demir
+/src/charts/space_time_cube.py    @ilayda-demir
+/src/charts/timeline.py           @ilayda-demir
 
-/src/sections/energy.py           @PLATFORM_GH
-/src/charts/sankey.py             @PLATFORM_GH
-/src/charts/treemap.py            @PLATFORM_GH
-/src/charts/payload_heatmap.py    @PLATFORM_GH
+/src/sections/energy.py           @sudekirlar
+/src/charts/sankey.py             @sudekirlar
+/src/charts/treemap.py            @sudekirlar
+/src/charts/payload_heatmap.py    @sudekirlar
 
-/src/sections/multivariate_ml.py  @UIML_GH
-/src/charts/pcp.py                @UIML_GH
-/src/charts/splom.py              @UIML_GH
-/src/charts/violin.py             @UIML_GH
-/src/charts/flight_heatmap.py     @UIML_GH
+/src/sections/multivariate_ml.py  @Pelingulkizilkilic
+/src/charts/pcp.py                @Pelingulkizilkilic
+/src/charts/splom.py              @Pelingulkizilkilic
+/src/charts/violin.py             @Pelingulkizilkilic
+/src/charts/flight_heatmap.py     @Pelingulkizilkilic
 
 # Shared documents
-/README.md                  @PLATFORM_GH @DATA_GH @UIML_GH
-/docs/                      @PLATFORM_GH @DATA_GH @UIML_GH
+/README.md                  @sudekirlar @ilayda-demir @Pelingulkizilkilic
+/docs/                      @sudekirlar @ilayda-demir @Pelingulkizilkilic
