@@ -53,3 +53,13 @@ def summarize_flights(telemetry: pd.DataFrame) -> pd.DataFrame:
 def parse_target_altitude(altitude: pd.Series) -> pd.Series:
     """Convert single altitudes to numbers; mark multi-level profiles as missing."""
     return pd.to_numeric(altitude, errors="coerce")
+
+
+def summarize_time_gaps(time_s: pd.Series, threshold_s: float = 1.0) -> dict:
+    """Summarize sampling gaps for one flight."""
+    times = pd.to_numeric(time_s, errors="coerce").dropna().sort_values()
+    gaps = times.diff().dropna()
+    return {
+        "max_gap_s": float(gaps.max()) if not gaps.empty else 0.0,
+        "large_gap_count": int((gaps > threshold_s).sum()),
+    }

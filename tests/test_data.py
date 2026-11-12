@@ -78,3 +78,13 @@ def test_parse_target_altitude_preserves_multi_level_profiles():
     assert result.iloc[:3].tolist() == [25.0, 50.0, 100.0]
     assert pd.isna(result.iloc[3])
     assert altitude.iloc[3] == "25-50-100-25"
+
+
+def test_summarize_time_gaps():
+    """Count gaps above the threshold and report the largest gap."""
+    from src.data.preprocess import summarize_time_gaps
+
+    result = summarize_time_gaps(pd.Series([0.0, 0.2, 0.4, 2.4, 2.6]))
+    assert abs(result["max_gap_s"] - 2.0) < 1e-9
+    assert result["large_gap_count"] == 1
+    assert summarize_time_gaps(pd.Series([0.0])) == {"max_gap_s": 0.0, "large_gap_count": 0}
