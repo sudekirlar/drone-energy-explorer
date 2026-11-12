@@ -55,11 +55,11 @@ and a green CI check.
 Branch name: `<type>/<issue-number>-<short-slug>`
 
 ```
-feat/12-route-map
-feat/15-sankey-energy-budget
+feat/13-route-map
+feat/16-sankey-energy-budget
 data/1-cleaning-flight-summaries
-fix/21-flight-heatmap-sort-order
-docs/31-readme
+fix/22-flight-heatmap-sort-order
+docs/32-readme
 ```
 
 Keep a branch to one issue. Small PRs get reviewed fast; a 1,000-line PR on Saturday night will not.
@@ -133,22 +133,31 @@ GitHub then credits both people on that commit.
 
 ## 4. Daily workflow
 
+Every planned task already has an issue, assigned to its owner and placed on the project board
+(Day and Estimate filled in). **Do not open a new issue for a planned task.** Open one only for
+something the plan does not cover: a bug, a question that blocks you, or an idea (label `later`).
+
+1. On the board, filter by your name, pick the task for today and move its card to **In Progress**.
+2. Create a branch named after the issue (below). The issue page's *Development → Create a branch*
+   button does the same.
+3. Commit in small steps with `Refs #<issue>` in the footer.
+4. Push, open a PR (`Refs #n` or `Closes #n`, see section 5), request the reviewer and move the
+   card to **In Review**.
+5. After approval, merge with "Create a merge commit". `Closes #n` closes the issue and the card
+   moves to **Done** by itself.
+
 ```bash
 git switch main && git pull                 # start from the latest main
-git switch -c feat/12-route-map             # one branch per issue
+git switch -c feat/13-route-map             # one branch per issue
 # ... work, commit in small steps ...
 git pull origin main                        # bring in teammates' merged work, fix conflicts locally
-git push -u origin feat/12-route-map
+git push -u origin feat/13-route-map
 # open a PR on GitHub
 ```
 
-Project board (GitHub Projects): when you start an issue, move its card to **In Progress**; when you
-open the PR, to **In Review**. Closing the issue (via `Closes #n` on merge) moves it to **Done**
-automatically.
-
 Daily status message (same time every day, team chat):
 ```
-Yesterday: #15 Sankey three levels done (PR open)
+Yesterday: #16 Sankey three levels done (PR open)
 Today: percent mode + finding text
 Blocked: phase_energy has no "sloped cruise" rows, asked Sude
 ```
@@ -158,7 +167,10 @@ Blocked: phase_energy has no "sloped cruise" rows, asked Sude
 ## 5. Pull requests
 
 - **Title** uses the same format as a commit subject: `feat(route-map): add power-coloured route map`.
-- **Description** follows the PR template. Write `Closes #12` so the issue closes on merge.
+- **Description** follows the PR template and links the task issue:
+  - `Refs #13` when the PR is one step of the task (the issue stays open),
+  - `Closes #13` in the PR that finishes the task (the issue closes on merge and its card moves
+    to Done).
 - **Reviewer:** CODEOWNERS requests the file owner automatically. For section PRs we rotate:
   - Sude's PRs → İlayda
   - İlayda's PRs → Pelin
@@ -191,8 +203,10 @@ Use **Request changes** when something on the checklist fails, **Approve** when 
 - **Widget keys:** every widget gets a unique `key` prefixed with its chart scope:
   `key="sankey_group_by"`. Two widgets with the same label and no key crash the app.
 - **Colours** only from `src/theme.py`. No hard-coded hex values in chart files.
-- **Data** is read through `src/data/loader.py`. Column names and units follow `src/data/schema.py`
-  (unit at the end of the name: `power_W`, `alt_rel_m`). Never read CSVs inside a chart.
+- **Data** is read through `src/data/loader.py`. Column names, types and units follow
+  `src/data/schema.py`: lowercase, unit at the end (`power_w`, `energy_wh`, `alt_rel_m`). Never
+  read files inside a chart. How charts, sections and shared state plug together:
+  `docs/interfaces.md`.
 - **Contract changes** go through a PR labelled `contract`, approved by Platform and the role that
   produces the table; bump `SCHEMA_VERSION`.
 - **Ownership.** Change someone else's file only through an issue or after asking them.
@@ -212,8 +226,10 @@ scikit-learn 1.9):
   src/charts must NOT import streamlit. UI code (widgets, st.cache_data, st.fragment) lives in app.py
   and src/sections/<section>.py, each with render(...). app.py only wires the menu and sidebar filters.
 - Sections are switched with st.segmented_control, not st.tabs. Each chart card is an @st.fragment.
-- Data comes from src/data/loader.py (parquet). Column names and units follow src/data/schema.py
-  (unit suffix: power_W, energy_Wh, alt_rel_m). Never read CSV files inside chart code.
+- Data comes from src/data/loader.py. Column names, types and units follow src/data/schema.py:
+  lowercase with the unit at the end (power_w, energy_wh, wh_per_km, alt_rel_m, speed_mps).
+  Never read files inside chart code. Interfaces (chart signature, section render(tables),
+  shared session_state keys, ml_metrics.json): docs/interfaces.md.
 - Colours only from src/theme.py. No rainbow/jet, no pie charts, no dual y-axes, no 3D except the
   Space-Time Cube.
 - Every figure: message-style title, axis titles with units, legend when >1 series, hover with units.
