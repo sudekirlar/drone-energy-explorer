@@ -17,6 +17,42 @@ def _cached_kmeans(flights: pd.DataFrame, k: int):
     return run_kmeans(flights, k=k)
 
 
+def _build_pcp_finding(summary: pd.DataFrame, silhouette: float) -> str:
+    """Build a data-driven finding sentence from cluster_summary and silhouette score."""
+    ordered = summary.sort_values("mean_energy_wh", ascending=True).reset_index(drop=True)
+    low = ordered.iloc[0]
+    high = ordered.iloc[-1]
+    k = len(ordered)
+
+    base = (
+        f"Group 1 ({int(low['n_flights'])} flights) uses {low['mean_energy_wh']:.1f} Wh on average "
+        f"and Group {k} ({int(high['n_flights'])} flights) uses {high['mean_energy_wh']:.1f} Wh."
+    )
+
+    detail = ""
+    if k >= 3:
+        prev = ordered.iloc[-2]
+        power_diff = abs(high["mean_cruise_power_w"] - prev["mean_cruise_power_w"])
+        if power_diff <= 15.0:
+            detail = (
+                f" Groups {k - 1} and {k} have almost the same cruise power "
+                f"({prev['mean_cruise_power_w']:.0f} W and {high['mean_cruise_power_w']:.0f} W); "
+                f"Group {k} uses more energy because its flights last longer "
+                f"({high['mean_duration_s']:.0f} s against {prev['mean_duration_s']:.0f} s)."
+            )
+        else:
+            detail = (
+                f" Group {k} draws {high['mean_cruise_power_w']:.0f} W in cruise against "
+                f"{prev['mean_cruise_power_w']:.0f} W in Group {k - 1}."
+            )
+
+    overlap_note = (
+        f" The silhouette score of {silhouette:.2f} means that the groups overlap "
+        "rather than forming hard categories."
+    )
+    return base + detail + overlap_note
+
+
 def render_multivariate_ml(flights: pd.DataFrame) -> None:
     """Render the Parallel Coordinates Plot and cached K-means card."""
     design_flights = (
@@ -26,18 +62,19 @@ def render_multivariate_ml(flights: pd.DataFrame) -> None:
     )
 
     info = CardInfo(
-        title="Flight behavioral regimes across nine telemetry measures",
+        title="Flight groups",
         how_to_read=(
             "Each polyline is one experimental flight across nine telemetry measures and its "
-            "K-means cluster. Drag any axis label left or right to reorder dimensions, or drag "
+            "K-means group. Drag any axis label left or right to reorder dimensions, or drag "
             "vertically along an axis to brush a subset of flights."
         ),
         about=(
-            "This view groups experimental flights (routes R1–R6) using K-means clustering "
-            "on standardized energy, power, duration, and payload features, excluding the "
-            "anemometer channel because it is collinear with target speed.",
-            "Cluster labels G1 through G6 are ordered from lowest to highest mean energy "
-            "consumption, and their colours remain fixed when k changes.",
+            "This view groups the R1 design flights (181 flights in the default view) using "
+            "K-means clustering on standardized energy, Wh/km, duration, cruise power, and "
+            "climb power; payload is not used as a clustering feature, and the anemometer "
+            "channel is excluded.",
+            "Groups are ordered from lowest to highest mean energy consumption so that Group 1 "
+            "always denotes the lowest-energy flights for the chosen k.",
         ),
         author="Pelin Gül Kızılkılıç",
     )
@@ -51,7 +88,7 @@ def render_multivariate_ml(flights: pd.DataFrame) -> None:
                 max_value=6,
                 value=3,
                 step=1,
-                key="pcp_kmeans_k",
+                key="kmeans_k",
             )
 
         if len(design_flights) < k:
@@ -62,14 +99,9 @@ def render_multivariate_ml(flights: pd.DataFrame) -> None:
         with col_metric:
             st.metric("Silhouette score", f"{result.silhouette:.3f}")
 
-        fig = build_pcp(design_flights, result.labels, max_k=6)
-        st.plotly_chart(fig, use_container_width=True)
-
-        card.finding = (
-            "K-means separates flights along a continuous energy-intensity gradient rather than "
-            "into hard, disconnected categories, and flight duration indirectly encodes cruise "
-            "speed over fixed-length legs."
-        )
+        fig = build_pcp(design_flights, result.labels)
+        card.plot(fig, key="pcp_chart")
+        card.finding = _build_pcp_finding(result.cluster_summary, result.silhouette)
 
 
 def render(tables: dict[str, pd.DataFrame], filters: Any = None) -> None:

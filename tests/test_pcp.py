@@ -31,21 +31,23 @@ def _sample_pcp_flights(n: int = 18) -> tuple[pd.DataFrame, pd.Series]:
     return df, labels
 
 
-def test_build_pcp_has_nine_measures_plus_cluster_and_stable_colors() -> None:
+def test_build_pcp_has_nine_measures_plus_group_axis_and_legend() -> None:
     df, labels_k3 = _sample_pcp_flights()
-    fig_k3 = build_pcp(df, labels_k3, max_k=6)
+    fig = build_pcp(df, labels_k3)
 
-    assert isinstance(fig_k3, go.Figure)
-    trace = fig_k3.data[0]
+    assert isinstance(fig, go.Figure)
+    trace = fig.data[0]
     assert isinstance(trace, go.Parcoords)
 
     dim_labels = [d.label for d in trace.dimensions]
     assert len(PCP_AXES) == 9
     assert len(dim_labels) == 10
     assert "Voltage drop (V)" in dim_labels
-    assert "Cluster" in dim_labels
+    assert "Group" in dim_labels
     assert all("anemometer" not in lbl.lower() for lbl in dim_labels)
 
-    labels_k4 = pd.Series(["G1", "G2", "G3", "G4"] * 4 + ["G1", "G2"])
-    fig_k4 = build_pcp(df, labels_k4, max_k=6)
-    assert list(fig_k3.data[0].line.colorscale) == list(fig_k4.data[0].line.colorscale)
+    group_dim = trace.dimensions[-1]
+    assert list(group_dim.range) == [1, 3]
+    assert list(group_dim.ticktext) == ["Group 1", "Group 2", "Group 3"]
+    assert len(fig.layout.annotations) == 1
+    assert "Group 1" in fig.layout.annotations[0].text

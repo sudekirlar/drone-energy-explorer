@@ -7,16 +7,7 @@ from collections.abc import Sequence
 import pandas as pd
 import plotly.graph_objects as go
 
-from src import theme
-
-CLUSTER_PALETTE: tuple[str, ...] = (
-    "#0072B2",  # G1 - Blue (lowest energy)
-    "#009E73",  # G2 - Bluish green
-    "#E69F00",  # G3 - Orange
-    "#CC79A7",  # G4 - Reddish purple
-    "#56B4E9",  # G5 - Sky blue
-    "#D55E00",  # G6 - Vermilion
-)
+from src.theme import PALETTES
 
 PCP_AXES: tuple[tuple[str, str], ...] = (
     ("payload_g", "Payload (g)"),
@@ -29,14 +20,6 @@ PCP_AXES: tuple[tuple[str, str], ...] = (
     ("climb_power_w", "Climb power (W)"),
     ("voltage_drop_v", "Voltage drop (V)"),
 )
-
-
-def _get_categorical_colors() -> list[str]:
-    for attr in ("PALETTE", "PALETTES", "COLORS", "COLOR_PALETTE"):
-        obj = getattr(theme, attr, None)
-        if isinstance(obj, dict) and "categorical" in obj:
-            return list(obj["categorical"])
-    return list(CLUSTER_PALETTE)
 
 
 def _prepare_pcp_frame(flights: pd.DataFrame, labels: pd.Series | Sequence[str]) -> pd.DataFrame:
@@ -61,26 +44,38 @@ def _prepare_pcp_frame(flights: pd.DataFrame, labels: pd.Series | Sequence[str])
     return df.dropna(subset=required_cols + ["cluster"]).reset_index(drop=True)
 
 
-def _cluster_colorscale(max_k: int = 6) -> list[list[float | str]]:
-    """Build a discrete Plotly colorscale anchored to G1..G6."""
-    colors = _get_categorical_colors()
-    while len(colors) < max_k:
-        colors.extend(CLUSTER_PALETTE)
-    colors = colors[:max_k]
-
+def _cluster_colorscale(k: int) -> list[list[float | str]]:
+    """Build a discrete Plotly colorscale for k groups using theme categorical colours."""
+    colors = list(PALETTES["categorical"])[:k]
     scale: list[list[float | str]] = []
     for idx, color in enumerate(colors):
-        low = idx / max_k
-        high = (idx + 1) / max_k
+        low = idx / k
+        high = (idx + 1) / k
         scale.append([low, color])
         scale.append([high, color])
     return scale
 
 
+def _legend_annotation(k: int) -> dict[str, object]:
+    """Build a key line annotation mapping categorical colours to Group 1..k."""
+    colors = list(PALETTES["categorical"])[:k]
+    items = [f'<span style="color:{colors[i]}">■</span> Group {i + 1}' for i in range(k)]
+    return {
+        "text": "Groups:  " + "   ".join(items),
+        "x": 0.0,
+        "y": 1.13,
+        "xref": "paper",
+        "yref": "paper",
+        "xanchor": "left",
+        "yanchor": "bottom",
+        "showarrow": False,
+        "font": {"size": 12},
+    }
+
+
 def build_pcp(
     flights: pd.DataFrame,
     labels: pd.Series | Sequence[str],
-    max_k: int = 6,
 ) -> go.Figure:
     """Build an interactive 9-measure + cluster Parallel Coordinates Plot."""
     df = _prepare_pcp_frame(flights, labels)
@@ -90,19 +85,20 @@ def build_pcp(
         return fig
 
     cluster_codes = df["cluster"].astype(str).str.extract(r"(\d+)", expand=False).astype(int)
+    k = max(int(cluster_codes.max()), 1)
 
     dimensions: list[dict[str, object]] = [
         {"label": label, "values": df[col].to_numpy(dtype=float)} for col, label in PCP_AXES
     ]
 
-    tick_vals = list(range(1, max_k + 1))
+    tick_vals = list(range(1, k + 1))
     dimensions.append(
         {
-            "label": "Cluster",
+            "label": "Group",
             "values": cluster_codes.to_numpy(dtype=float),
-            "range": [1, max_k],
+            "range": [1, k],
             "tickvals": tick_vals,
-            "ticktext": [f"G{i}" for i in tick_vals],
+            "ticktext": [f"Group {i}" for i in tick_vals],
         }
     )
 
@@ -111,9 +107,9 @@ def build_pcp(
             go.Parcoords(
                 line={
                     "color": cluster_codes.to_numpy(dtype=float),
-                    "colorscale": _cluster_colorscale(max_k=max_k),
+                    "colorscale": _cluster_colorscale(k),
                     "cmin": 1,
-                    "cmax": max_k,
+                    "cmax": k,
                     "showscale": False,
                 },
                 dimensions=dimensions,
@@ -123,7 +119,8 @@ def build_pcp(
     )
 
     fig.update_layout(
-        margin={"l": 45, "r": 35, "t": 45, "b": 25},
+        annotations=[_legend_annotation(k)],
+        margin={"l": 45, "r": 35, "t": 65, "b": 25},
         height=460,
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
