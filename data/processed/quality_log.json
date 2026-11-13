@@ -1,0 +1,30 @@
+[
+  {
+    "rule_id": "route-filter",
+    "description": "Exclude ground and hover test routes.",
+    "rows_affected": 10295,
+    "flights_affected": 13,
+    "iso25012": "Consistency"
+  },
+  {
+    "rule_id": "negative-current",
+    "description": "Clip negative battery current readings to zero.",
+    "rows_affected": 26477,
+    "flights_affected": 175,
+    "iso25012": "Accuracy"
+  },
+  {
+    "rule_id": "inferred-time-correction",
+    "description": "Correct four likely clock transcription errors using neighbouring flight times; preserve original times. Corrections are inferred, not independently verified.",
+    "rows_affected": 4,
+    "flights_affected": 4,
+    "iso25012": "Accuracy"
+  },
+  {
+    "rule_id": "joint-deviation-outliers",
+    "description": "Flag R1 design flights using group-median deviations in energy, duration and mean power, scaled by global median absolute deviations and thresholded at Q3 + 1.5*IQR. Flights are retained. This implementation flags 15 flights; D4 reports 4 using an unspecified formula, so results differ.",
+    "rows_affected": 15,
+    "flights_affected": 15,
+    "iso25012": "Consistency"
+  }
+]
