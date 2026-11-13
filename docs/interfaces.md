@@ -133,7 +133,7 @@ read the same. A card has fixed parts, always in this order:
 | Controls | The card's own widgets. |
 | Chart | The Plotly figure, drawn with `card.plot`. Every colour used for a category has a legend. |
 | Finding (optional) | One or two sentences about what is on screen now, computed from the filtered data and the card's controls. Left out when nothing useful can be computed. Never a fixed sentence about flights the visitor may not be looking at. |
-| About this chart (folded) | Short paragraphs: why the chart is useful for this data, how it encodes the data, what the visitor can do, the lecture behind it, which flights it uses, and who made it. |
+| About this chart (folded) | Short paragraphs: why the chart is useful for this data, how it encodes the data, what the visitor can do, which flights it uses, and who made it. |
 
 The fixed texts live in one `CardInfo` per chart, next to the card function:
 
@@ -180,6 +180,9 @@ Everything a visitor reads is in simple English, in short, full sentences.
 - Give units in brackets the first time: "power (W)", "speed (m/s)".
 - A finding talks only about what is on screen, and its numbers are computed from the data.
 - Write "waypoint" in full in sentences; "WP1" is fine as a label on the chart.
+- Write for the visitor, not for the grader. No lecture numbers, slide references or course
+  vocabulary on screen ("Lecture 7", "Yi et al.", "encode"); those belong in the report, the
+  README and the presentation (`docs/decisions.md` keeps the reasons for each chart).
 - Name people, not roles: "This chart was made by İlayda Demir."
 
 **Widget keys** are unique and start with the chart scope (`sankey_`, `stc_`, `pcp_`, ...).
