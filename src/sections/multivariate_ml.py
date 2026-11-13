@@ -27,24 +27,22 @@ def render_multivariate_ml(flights: pd.DataFrame) -> None:
 
     info = CardInfo(
         title="Flight behavioral regimes across nine telemetry measures",
-        question="Which flights behave alike across payload, speed, power, and energy measures?",
-        takeaway=(
-            "K-means groups flights along an energy-intensity gradient, yet clusters overlap "
-            "and represent continuous regimes rather than hard categories; flight duration "
-            "also indirectly encodes cruise speed over fixed-length legs."
-        ),
         how_to_read=(
-            "Drag any axis label left or right to reorder dimensions, or drag vertically "
-            "along an axis to brush a subset of flights. Cluster colours remain fixed to "
-            "G1–G6 ordered from lowest to highest mean energy."
+            "Each polyline is one experimental flight across nine telemetry measures and its "
+            "K-means cluster. Drag any axis label left or right to reorder dimensions, or drag "
+            "vertically along an axis to brush a subset of flights."
         ),
-        data_note=(
-            "Experimental design flights (R1–R6, in_design = True), "
-            "excluding the anemometer channel."
+        about=(
+            "This view groups experimental flights (routes R1–R6) using K-means clustering "
+            "on standardized energy, power, duration, and payload features, excluding the "
+            "anemometer channel because it is collinear with target speed.",
+            "Cluster labels G1 through G6 are ordered from lowest to highest mean energy "
+            "consumption, and their colours remain fixed when k changes.",
         ),
+        author="Pelin Gül Kızılkılıç",
     )
 
-    with chart_card(info):
+    with chart_card(info) as card:
         col_slider, col_metric = st.columns([3, 1])
         with col_slider:
             k = st.slider(
@@ -66,6 +64,12 @@ def render_multivariate_ml(flights: pd.DataFrame) -> None:
 
         fig = build_pcp(design_flights, result.labels, max_k=6)
         st.plotly_chart(fig, use_container_width=True)
+
+        card.finding = (
+            "K-means separates flights along a continuous energy-intensity gradient rather than "
+            "into hard, disconnected categories, and flight duration indirectly encodes cruise "
+            "speed over fixed-length legs."
+        )
 
 
 def render(tables: dict[str, pd.DataFrame], filters: Any = None) -> None:
