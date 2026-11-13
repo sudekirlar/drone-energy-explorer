@@ -141,3 +141,91 @@ def summarize_flight_quality(telemetry: pd.DataFrame) -> pd.DataFrame:
             "negative_current_count",
         ],
     )
+
+
+def clean_telemetry(telemetry: pd.DataFrame, home_lat: float, home_lon: float) -> pd.DataFrame:
+    """Clean one flight at its original sampling rate, without changing input."""
+    import numpy as np
+
+    required = {
+        "flight",
+        "time",
+        "position_x",
+        "position_y",
+        "position_z",
+        "velocity_x",
+        "velocity_y",
+        "velocity_z",
+        "wind_speed",
+        "battery_voltage",
+        "battery_current",
+    }
+    missing = required - set(telemetry.columns)
+    if missing:
+        raise ValueError(f"Missing raw telemetry columns: {sorted(missing)}")
+    if telemetry.empty:
+        raise ValueError("Cannot clean an empty flight")
+    if telemetry["flight"].nunique(dropna=False) != 1:
+        raise ValueError("clean_telemetry expects exactly one flight")
+
+    source = telemetry.copy()
+    source["time"] = pd.to_numeric(source["time"], errors="coerce")
+    if source["time"].isna().any():
+        raise ValueError("Flight contains invalid timestamps")
+    source = source.sort_values("time", kind="stable").reset_index(drop=True)
+    t = source["time"].to_numpy(dtype=float)
+    if not np.isfinite(t).all() or np.any(np.diff(t) <= 0):
+        raise ValueError("Flight timestamps must be finite and strictly increasing")
+    t = t - t[0]
+
+    lat = pd.to_numeric(source["position_y"], errors="coerce").to_numpy(dtype=float)
+    lon = pd.to_numeric(source["position_x"], errors="coerce").to_numpy(dtype=float)
+    voltage = pd.to_numeric(source["battery_voltage"], errors="coerce").to_numpy(dtype=float)
+    current = (
+        pd.to_numeric(source["battery_current"], errors="coerce")
+        .clip(lower=0)
+        .to_numpy(dtype=float)
+    )
+    power = voltage * current
+    energy = np.zeros(len(source), dtype=float)
+    if len(source) > 1:
+        energy[1:] = np.cumsum((power[1:] + power[:-1]) / 2 * np.diff(t) / 3600)
+
+    radius_m = 6_371_000.0
+    east = np.radians(lon - home_lon) * radius_m * np.cos(np.radians(home_lat))
+    north = np.radians(lat - home_lat) * radius_m
+    course = (
+        np.degrees(
+            np.arctan2(
+                np.diff(east, prepend=east[0]),
+                np.diff(north, prepend=north[0]),
+            )
+        )
+        + 360
+    ) % 360
+
+    return pd.DataFrame(
+        {
+            "flight": int(source["flight"].iloc[0]),
+            "t_s": t,
+            "lat_deg": lat,
+            "lon_deg": lon,
+            "east_m": east,
+            "north_m": north,
+            "alt_rel_m": calculate_relative_altitude(source["position_z"]).to_numpy(dtype=float),
+            "ground_speed_mps": calculate_ground_speed(
+                source["velocity_x"], source["velocity_y"]
+            ).to_numpy(dtype=float),
+            "vertical_speed_mps": pd.to_numeric(source["velocity_z"], errors="coerce").to_numpy(
+                dtype=float
+            ),
+            "course_deg": course,
+            "airspeed_mps": pd.to_numeric(source["wind_speed"], errors="coerce").to_numpy(
+                dtype=float
+            ),
+            "voltage_v": voltage,
+            "current_a": current,
+            "power_w": power,
+            "energy_wh": energy,
+        }
+    )
