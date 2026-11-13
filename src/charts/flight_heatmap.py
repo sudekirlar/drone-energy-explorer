@@ -179,9 +179,9 @@ def build_flight_time_heatmap(
 
     tel = tel.copy()
     t_shifted = tel[time_col] - tel.groupby("flight")[time_col].transform("min")
-    tel["_time_bin"] = (np.floor(t_shifted / SLICE_SECONDS) * SLICE_SECONDS).astype(int)
+    tel["time_bin"] = (np.floor(t_shifted / SLICE_SECONDS) * SLICE_SECONDS).astype(int)
 
-    time_bins = sorted(tel["_time_bin"].unique().tolist())
+    time_bins = sorted(tel["time_bin"].unique().tolist())
     bin_to_col = {b: idx for idx, b in enumerate(time_bins)}
     flight_to_row = {f: idx for idx, f in enumerate(ordered_flights)}
 
@@ -193,33 +193,33 @@ def build_flight_time_heatmap(
     meta_lookup = fl_sorted.set_index("flight")["_group_label"].to_dict()
 
     if color_mode == "phase":
-        tel["_code"] = tel["phase"].map(PHASE_TO_CODE).fillna(-1).astype(int)
-        valid_tel = tel[tel["_code"] >= 0]
+        tel["phase_code"] = tel["phase"].map(PHASE_TO_CODE).fillna(-1).astype(int)
+        valid_tel = tel[tel["phase_code"] >= 0]
         agg = (
-            valid_tel.groupby(["flight", "_time_bin"])["_code"]
+            valid_tel.groupby(["flight", "time_bin"])["phase_code"]
             .agg(lambda s: int(s.mode().iloc[0]))
             .reset_index()
         )
         for row in agg.itertuples(index=False):
             r_idx = flight_to_row[row.flight]
-            c_idx = bin_to_col[row._time_bin]
-            code = int(row._code)
+            c_idx = bin_to_col[row.time_bin]
+            code = int(row.phase_code)
             phase_name = PHASE_ORDER[code]
             z[r_idx, c_idx] = float(code)
             grp_lbl = meta_lookup.get(row.flight, "")
             hover[r_idx, c_idx] = (
-                f"Flight {int(row.flight)} ({grp_lbl}) · t = {row._time_bin} s: {phase_name}"
+                f"Flight {int(row.flight)} ({grp_lbl}) · t = {row.time_bin} s: {phase_name}"
             )
     else:
-        agg = tel.groupby(["flight", "_time_bin"])["power_w"].mean().reset_index()
+        agg = tel.groupby(["flight", "time_bin"])["power_w"].mean().reset_index()
         for row in agg.itertuples(index=False):
             r_idx = flight_to_row[row.flight]
-            c_idx = bin_to_col[row._time_bin]
+            c_idx = bin_to_col[row.time_bin]
             pw = float(row.power_w)
             z[r_idx, c_idx] = pw
             grp_lbl = meta_lookup.get(row.flight, "")
             hover[r_idx, c_idx] = (
-                f"Flight {int(row.flight)} ({grp_lbl}) · t = {row._time_bin} s: {pw:.0f} W"
+                f"Flight {int(row.flight)} ({grp_lbl}) · t = {row.time_bin} s: {pw:.0f} W"
             )
 
     y_labels = [f"F{int(f)}" for f in ordered_flights]
