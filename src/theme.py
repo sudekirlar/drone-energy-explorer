@@ -21,7 +21,8 @@ PALETTES = {
     ],
     # Categorical, one colour per main phase; the same everywhere (map, cube, timeline, Sankey).
     "phase": {
-        "Ground": "#9a968c",
+        # Light grey: under deuteranomaly a mid grey looked almost like Landing's green.
+        "Ground": "#d9d6cc",
         "Take-off": "#7a5195",
         "Cruise": "#2a78d6",
         "Manoeuvre": "#eda100",
@@ -29,7 +30,7 @@ PALETTES = {
     },
     # Sub-phases use their main phase's colour; the second sub-phase of a pair is lighter.
     "sub_phase": {
-        "Ground": "#9a968c",
+        "Ground": "#d9d6cc",
         "Spool-up": "#b39bc8",
         "Climb": "#7a5195",
         "Straight leg": "#2a78d6",
@@ -45,15 +46,16 @@ PALETTES = {
         500: "#08306b",
         750: "#041a3d",
     },
-    # Categorical, for flights and K-means groups (no order implied).
+    # Categorical, for flights and K-means groups (no order implied). Okabe & Ito (2008),
+    # designed to stay distinguishable for the common types of colour-vision deficiency.
     "categorical": [
-        "#2a78d6",
-        "#eb6834",
-        "#1baf7a",
-        "#eda100",
-        "#6250d6",
-        "#e87ba4",
-        "#8a877f",
+        "#0072B2",
+        "#E69F00",
+        "#009E73",
+        "#CC79A7",
+        "#56B4E9",
+        "#D55E00",
+        "#F0E442",
     ],
     # Diverging, for "observed minus predicted": blue below, grey at zero, red above.
     "diverging": [
