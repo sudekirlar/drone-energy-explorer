@@ -92,6 +92,20 @@ if "flights" not in tables or tables["flights"].empty:
 flights_df = tables["flights"]
 base_state = FilterState.from_flights(flights_df)
 
+# The experiment uses payloads 0/250/500 g; any other payload is a single extra flight
+# (flight 76 carries 750 g). It stays selectable, but is not selected by default.
+design_payloads = set(flights_df.loc[flights_df["in_design"], "payload_g"].astype(int))
+n_other_routes = int((flights_df["route"] != "R1").sum())
+
+
+def payload_label(payload: int) -> str:
+    if payload in design_payloads:
+        return f"{payload}"
+    ids = flights_df.loc[flights_df["payload_g"] == payload, "flight"].astype(int).tolist()
+    which = f"flight {ids[0]}" if len(ids) == 1 else "flights " + ", ".join(map(str, ids))
+    return f"{payload} ({which}, outside the design)"
+
+
 with st.sidebar:
     st.header("Global Filters")
     st.caption("Selected filters apply to all dashboard sections.")
@@ -99,7 +113,9 @@ with st.sidebar:
     payloads = st.multiselect(
         "Payload (g)",
         options=base_state.payload_options,
-        default=base_state.payload_options,
+        default=[p for p in base_state.payload_options if p in design_payloads],
+        format_func=payload_label,
+        help="The experiment flew 0, 250 and 500 g. Other payloads are single extra flights.",
     )
 
     altitudes = st.multiselect(
@@ -120,7 +136,7 @@ with st.sidebar:
     )
 
     include_other_routes = st.checkbox(
-        "Include R2–R7",
+        f"Include R2–R7 ({n_other_routes} flights on other routes)",
         value=False,
     )
 
@@ -153,20 +169,19 @@ sections = {
     "Multivariate & ML": multivariate_ml,
 }
 
+# The menu keeps its own value under the "menu_section" key (interfaces.md). Passing a
+# `default` that changes on every run would make Streamlit treat it as a new widget and drop
+# every second click; `required=True` stops a second click from deselecting the section.
 if "menu_section" not in st.session_state:
     st.session_state["menu_section"] = "Overview"
 
-selected_section = st.segmented_control(
+st.segmented_control(
     "Select a dashboard section",
     options=list(sections.keys()),
-    default=st.session_state["menu_section"],
-    selection_mode="single",
+    key="menu_section",
+    required=True,
 )
-
-if selected_section is None:
-    selected_section = "Overview"
-
-st.session_state["menu_section"] = selected_section
+selected_section = st.session_state["menu_section"]
 
 st.divider()
 

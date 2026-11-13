@@ -123,25 +123,67 @@ only rely on receiving the filtered tables.
 
 ### Card pattern
 
-Every chart card is a fragment, so its own controls rerun only the card:
+Every chart is shown in the shared card from `src/sections/common.py`, so all cards look and
+read the same. A card has fixed parts, always in this order:
+
+| Part | What it says |
+|---|---|
+| Title | The chart's short name, a few words: "Flight routes", "Energy budget". No task codes. |
+| How to read | One or two full sentences: what the marks, axes and colours mean. |
+| Controls | The card's own widgets. |
+| Chart | The Plotly figure, drawn with `card.plot`. Every colour used for a category has a legend. |
+| Finding (optional) | One or two sentences about what is on screen now, computed from the filtered data and the card's controls. Left out when nothing useful can be computed. Never a fixed sentence about flights the visitor may not be looking at. |
+| About this chart (folded) | Short paragraphs: why the chart is useful for this data, how it encodes the data, what the visitor can do, which flights it uses, and who made it. |
+
+The fixed texts live in one `CardInfo` per chart, next to the card function:
 
 ```python
+from src.sections.common import CardInfo, chart_card
+
+SANKEY = CardInfo(
+    title="Energy budget",
+    how_to_read=(
+        "Bands flow from groups of flights to flight phases. A wider band means more energy."
+    ),
+    about=(
+        "A flight's energy is shared between its phases, and the parts add up to the total. "
+        "A Sankey diagram shows exactly this kind of budget.",
+        "...",
+    ),
+    author="Sude Kırlar",
+)
+
+
 @st.fragment
 def sankey_card(tables: dict[str, pd.DataFrame]) -> None:
-    st.subheader("At 100 m, take-off and landing use half of the energy")  # message title
-    st.caption("How to read: band width = energy (Wh) ...")
-    group_by = st.selectbox(
-        "Group by", ["altitude", "speed", "payload", "route"], key="sankey_group_by"
-    )
-    fig = build_sankey(tables["phase_energy"], tables["flights"], group_by)
-    st.plotly_chart(fig, key="sankey_chart")
-    st.info("Finding: ...")
-    with st.expander("About this chart"):
-        st.markdown("Lecture 6 + flows · interaction: reconfigure, select · author: Sude")
+    with chart_card(SANKEY) as card:
+        group_by = st.selectbox(
+            "Group by", ["altitude", "speed", "payload", "route"], key="sankey_group_by"
+        )
+        card.plot(
+            build_sankey(tables["phase_energy"], tables["flights"], group_by), key="sankey_chart"
+        )
+        card.finding = describe_sankey(tables["phase_energy"], tables["flights"], group_by)
 ```
 
-Card anatomy: message title → one-line how to read → controls → chart → Finding box → expander
-(lecture reference, interaction type, author).
+Each card function is an `@st.fragment`, so its own controls rerun only that card.
+
+### Writing on screen
+
+Everything a visitor reads is in simple English, in short, full sentences.
+
+- Write whole sentences with a subject and a verb. No clipped fragments such as
+  "Why this chart." or "A map loses two dimensions: time and altitude".
+- One idea per sentence. Present tense: "Power rises", not "Power will rise".
+- Say what the visitor sees, not how we built it. No internal words: "Platform", "contract",
+  "schema", task codes. Say "estimated phase", never just "phase label".
+- Give units in brackets the first time: "power (W)", "speed (m/s)".
+- A finding talks only about what is on screen, and its numbers are computed from the data.
+- Write "waypoint" in full in sentences; "WP1" is fine as a label on the chart.
+- Write for the visitor, not for the grader. No lecture numbers, slide references or course
+  vocabulary on screen ("Lecture 7", "Yi et al.", "encode"); those belong in the report, the
+  README and the presentation (`docs/decisions.md` keeps the reasons for each chart).
+- Name people, not roles: "This chart was made by İlayda Demir."
 
 **Widget keys** are unique and start with the chart scope (`sankey_`, `stc_`, `pcp_`, ...).
 
