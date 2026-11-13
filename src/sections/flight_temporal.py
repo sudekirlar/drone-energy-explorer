@@ -91,8 +91,6 @@ TIMELINE = CardInfo(
         "airspeed and not the wind.",
         "You can choose a flight, zoom into one panel while the others follow, hover to read all "
         "four values at the same moment, and turn the phase bands on or off.",
-        "Time series are covered in Lecture 7 as the most direct way to follow a change over "
-        "time. The chart works for one flight from any route.",
     ),
     author=AUTHOR,
 )
