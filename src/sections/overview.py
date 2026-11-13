@@ -178,8 +178,9 @@ def _quality_details(tables: dict[str, pd.DataFrame]) -> None:
         for sentence in _phase_checks(tables):
             st.markdown(f"- {sentence}")
         st.markdown(
-            "- Flights on different days do not use significantly different amounts of energy "
-            "(Kruskal–Wallis test, p ≈ 0.09)."
+            "- We compared the energy of each flight with the median energy of the flights that "
+            "had the same settings. This difference, the energy residual, does not change "
+            "significantly from one test day to another (Kruskal–Wallis test, p ≈ 0.09)."
         )
 
     with st.expander("Columns and units"):
