@@ -1,4 +1,4 @@
-﻿"""Shared UI components following the card anatomy in docs/interfaces.md."""
+"""Shared UI components following the card anatomy in docs/interfaces.md."""
 
 from __future__ import annotations
 
