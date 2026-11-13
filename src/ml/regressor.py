@@ -207,9 +207,9 @@ def run_cruise_power_regression(
     pred_df = pd.DataFrame(
         {
             "flight": df["flight"].astype(int),
-            "observed_cruise_power_w": y,
-            "rf_pred_cruise_power_w": rf_oof,
-            "linear_pred_cruise_power_w": lr_oof,
+            "cruise_power_w": y,
+            "rf_pred_w": rf_oof,
+            "linear_pred_w": lr_oof,
         }
     )
 
@@ -252,11 +252,11 @@ def build_and_save_artifacts(
             if col in pred_to_save.columns:
                 continue
             if "obs" in col:
-                rename_map["observed_cruise_power_w"] = col
+                rename_map["cruise_power_w"] = col
             elif "rf" in col:
-                rename_map["rf_pred_cruise_power_w"] = col
+                rename_map["rf_pred_w"] = col
             elif "lin" in col:
-                rename_map["linear_pred_cruise_power_w"] = col
+                rename_map["linear_pred_w"] = col
         pred_to_save = pred_to_save.rename(columns=rename_map)[expected_cols]
 
     validated_df = loader.validate(pred_to_save, schema.ML_PAYLOAD)
