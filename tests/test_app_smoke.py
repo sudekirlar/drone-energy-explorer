@@ -23,7 +23,8 @@ from src.data import loader, schema
 
 APP = Path(__file__).resolve().parents[1] / "app.py"
 SECTIONS = ["Overview", "Flight & Temporal", "Energy & Conditions", "Multivariate & ML"]
-SECONDS_PER_FLIGHT = 16  # two rows for each of the eight sub-phases
+ROWS_PER_SUB_PHASE = 2
+SECONDS_PER_FLIGHT = ROWS_PER_SUB_PHASE * len(schema.SUB_PHASES)
 WAYPOINTS_PER_FLIGHT = 3  # home + two turns
 
 
@@ -76,7 +77,7 @@ def _fake_tables() -> dict[str, pd.DataFrame]:
     )
 
     # telemetry_1hz: every flight passes through every sub-phase, in order.
-    sub_phases = [s for s in schema.SUB_PHASES for _ in range(SECONDS_PER_FLIGHT // 8)]
+    sub_phases = [s for s in schema.SUB_PHASES for _ in range(ROWS_PER_SUB_PHASE)]
     m = n * SECONDS_PER_FLIGHT
     telemetry = _fake_table(
         schema.TELEMETRY,
