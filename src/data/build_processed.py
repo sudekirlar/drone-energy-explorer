@@ -12,6 +12,7 @@ from src.data.preprocess import (
     calculate_energy_wh,
     calculate_ground_speed,
     calculate_relative_altitude,
+    clean_telemetry,
     summarize_time_gaps,
 )
 
@@ -46,6 +47,7 @@ def build() -> None:
 
     flight_rows = []
     telemetry_rows = []
+    raw_rate_rows = []
 
     for flight_id, group in raw.groupby("flight", sort=True):
         group = group.sort_values("time").copy()
@@ -63,14 +65,12 @@ def build() -> None:
         energy = np.zeros(len(group), dtype=float)
         energy[1:] = np.cumsum((power[1:] + power[:-1]) / 2 * np.diff(t) / 3600)
 
-        ground_speed = calculate_ground_speed(group["velocity_x"], group["velocity_y"]).to_numpy(
-            dtype=float
-        )
+        calculate_ground_speed(group["velocity_x"], group["velocity_y"]).to_numpy(dtype=float)
 
-        alt_rel = calculate_relative_altitude(group["position_z"]).to_numpy(dtype=float)
+        calculate_relative_altitude(group["position_z"]).to_numpy(dtype=float)
 
-        east = np.radians(lon - home_lon) * EARTH_RADIUS_M * np.cos(np.radians(home_lat))
-        north = np.radians(lat - home_lat) * EARTH_RADIUS_M
+        np.radians(lon - home_lon) * EARTH_RADIUS_M * np.cos(np.radians(home_lat))
+        np.radians(lat - home_lat) * EARTH_RADIUS_M
 
         distance = gps_distance_m(lat, lon)
         duration = float(t[-1] - t[0])
@@ -135,34 +135,10 @@ def build() -> None:
             }
         )
 
-        samples = pd.DataFrame(
-            {
-                "flight": int(flight_id),
-                "t_s": t,
-                "lat_deg": lat,
-                "lon_deg": lon,
-                "east_m": east,
-                "north_m": north,
-                "alt_rel_m": alt_rel,
-                "ground_speed_mps": ground_speed,
-                "vertical_speed_mps": group["velocity_z"].to_numpy(dtype=float),
-                "course_deg": (
-                    np.degrees(
-                        np.arctan2(
-                            np.diff(east, prepend=east[0]),
-                            np.diff(north, prepend=north[0]),
-                        )
-                    )
-                    + 360
-                )
-                % 360,
-                "airspeed_mps": group["wind_speed"].to_numpy(dtype=float),
-                "voltage_v": voltage,
-                "current_a": current,
-                "power_w": power,
-                "energy_wh": energy,
-            }
-        )
+        # Preserve raw-rate cleaned telemetry for phase energy integration.
+        raw_samples = clean_telemetry(group, home_lat, home_lon)
+        raw_rate_rows.append(raw_samples)
+        samples = raw_samples.copy()
 
         # Keep the last available sample in each one-second interval.
         samples["t_s"] = np.floor(samples["t_s"]).astype(int)
@@ -204,6 +180,9 @@ def build() -> None:
         "Joint deviation in energy, duration and mean power"
     )
 
+    pd.concat(raw_rate_rows, ignore_index=True).to_parquet(
+        OUTPUT / "raw_rate_telemetry.parquet", index=False
+    )
     flights.to_parquet(OUTPUT / "flights_data.parquet", index=False)
     telemetry.to_parquet(OUTPUT / "telemetry_data_1hz.parquet", index=False)
 
