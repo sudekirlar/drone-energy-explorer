@@ -89,6 +89,9 @@ Newest at the bottom. Reference an entry in PRs and the report as `D<n>`.
   3.12 virtual environment, while 3.13 was already installed. The pinned set was installed and
   smoke-tested on 3.12 and 3.13 on 2026-11-12. Community Cloud has been reported to run a
   different Python than selected, so the placeholder page prints the running version.
+- **Update (2026-11-13):** Streamlit Cloud replaced our pinned pyarrow 26.0.1 with 24.0.0 at
+  deploy time, citing a known segfault (apache/arrow#50471). We pin 24.0.0 so local, CI and
+  Cloud run the same version.
 
 ## D11 · Sections switched with a menu, not tabs
 - **Decision:** `st.segmented_control` at the top; only the selected section runs. Each chart card is
@@ -113,3 +116,33 @@ Newest at the bottom. Reference an entry in PRs and the report as `D<n>`.
 - **Why:** keeps the layer rule (no Streamlit in `src/data`, enforced by a test) and makes the
   loader testable without a browser. The fallback lets charts start on sample tables and switch
   to real data without code changes.
+
+## D14 · How the phase rule is implemented
+- **Decision:** (1) a leg's direction is the line from its first to its last point, not the
+  per-sample GPS course; (2) sloped cruise is searched in every horizontal motion (ground speed
+  ≥ 1.5 m/s), not only in legs at 80 % of the target speed; (3) `phase_energy` has one row per
+  flight and sub-phase, all eight, zeros and Ground included; (4) the energy between two samples
+  is booked to the first sample's sub-phase.
+- **Why:** (1) samples are 0.1–0.2 s apart, so their course is mostly GPS noise and reads 0°
+  when the drone stands still; (2) on R7 the drone flies its climbing legs at ~8 m/s and the
+  descending leg at ~5 m/s against a 10 m/s target; (3) averages over flights must count an
+  absent sub-phase as zero, and the parts must add up to the flight total; (4) makes energy
+  conservation exact.
+- **Result on the real data:** largest gap between phase energies and flight energy 7e-14 Wh;
+  178 of 181 R1 design flights show exactly two WP turns (the others are 85, 86 and 129; 85 and
+  129 are flagged outliers, 86 never holds 80 % of its 12 m/s target on two legs); every R6
+  flight shows three turns, though the third is only 47–49°; sloped cruise appears only in
+  flights 2, 278 and 279. Changing the cruise-speed ratio to 70 % / 90 % moves the cruise and
+  manoeuvre shares by 2.2–4.1 points; ±20 % on every other threshold moves take-off and landing
+  by under 0.4 points.
+
+## D15 · One pipeline writes data/processed, and its files are committed
+- **Decision:** `src/data/pipeline.py` runs cleaning (Data, writes `data/intermediate/`), phases
+  (Platform) and the contract check, and is the only code that writes the contract tables to
+  `data/processed/`. The processed tables (about 4 MB) are committed to git. The T5 sample
+  tables stay in `data/sample/` as a fallback.
+- **Alternative:** each producer writes its part of `flights` and `telemetry_1hz` to
+  `data/processed/` in turn.
+- **Why:** the Data columns and the Platform columns live in the same tables, which pass the
+  contract only when both are filled, so one step validates and writes them together;
+  Streamlit Cloud has no raw data, so it can only read committed tables.
