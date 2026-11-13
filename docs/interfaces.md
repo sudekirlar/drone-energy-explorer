@@ -128,28 +128,28 @@ read the same. A card has fixed parts, always in this order:
 
 | Part | What it says |
 |---|---|
-| Title | The chart's main message, as one sentence (Guideline #7). Not a question, no task codes (no "G1"). |
-| How to read | One sentence: what the marks, axes and colours mean. |
-| Data | One sentence: which flights the chart uses, and why. |
+| Title | The chart's short name, a few words: "Flight routes", "Energy budget". No task codes. |
+| How to read | One or two full sentences: what the marks, axes and colours mean. |
 | Controls | The card's own widgets. |
-| Chart | The Plotly figure, drawn with `card.plot`. |
-| Finding | What the real data shows, with numbers. Computed from the filtered data when the claim depends on the filters. |
-| About this chart (folded) | Why this chart · What you see (encodings) · What you can do (Yi et al. interaction types) · From the lectures · Made by (full name). |
+| Chart | The Plotly figure, drawn with `card.plot`. Every colour used for a category has a legend. |
+| Finding (optional) | One or two sentences about what is on screen now, computed from the filtered data and the card's controls. Left out when nothing useful can be computed. Never a fixed sentence about flights the visitor may not be looking at. |
+| About this chart (folded) | Short paragraphs: why the chart is useful for this data, how it encodes the data, what the visitor can do, the lecture behind it, which flights it uses, and who made it. |
 
-The texts live in one `CardInfo` per chart, next to the card function:
+The fixed texts live in one `CardInfo` per chart, next to the card function:
 
 ```python
 from src.sections.common import CardInfo, chart_card
 
 SANKEY = CardInfo(
-    title="At 100 m, take-off and landing use half of the energy.",
-    how_to_read="Bands flow from flight groups to phases; a wider band means more energy (Wh).",
-    data="The 181 R1 design flights; the route grouping adds R2-R7.",
-    finding="...",
-    why="Energy is a budget: the phases of a flight add up to its total, as in a Sankey.",
-    encoding="Band width shows energy. Colour shows the phase, as in every other chart.",
-    interaction="Change the grouping (reconfigure) and switch to percentages (encode).",
-    lecture="Lecture 6 (trees and flows): flow diagrams show how a total divides.",
+    title="Energy budget",
+    how_to_read=(
+        "Bands flow from groups of flights to flight phases. A wider band means more energy."
+    ),
+    about=(
+        "A flight's energy is shared between its phases, and the parts add up to the total. "
+        "A Sankey diagram shows exactly this kind of budget.",
+        "...",
+    ),
     author="Sude Kırlar",
 )
 
@@ -163,7 +163,7 @@ def sankey_card(tables: dict[str, pd.DataFrame]) -> None:
         card.plot(
             build_sankey(tables["phase_energy"], tables["flights"], group_by), key="sankey_chart"
         )
-        card.finding = "..."  # optional: replaces SANKEY.finding with numbers from the data
+        card.finding = describe_sankey(tables["phase_energy"], tables["flights"], group_by)
 ```
 
 Each card function is an `@st.fragment`, so its own controls rerun only that card.
@@ -172,14 +172,15 @@ Each card function is an `@st.fragment`, so its own controls rerun only that car
 
 Everything a visitor reads is in simple English, in short, full sentences.
 
+- Write whole sentences with a subject and a verb. No clipped fragments such as
+  "Why this chart." or "A map loses two dimensions: time and altitude".
 - One idea per sentence. Present tense: "Power rises", not "Power will rise".
 - Say what the visitor sees, not how we built it. No internal words: "Platform", "contract",
   "schema", task codes. Say "estimated phase", never just "phase label".
 - Give units in brackets the first time: "power (W)", "speed (m/s)".
-- Numbers in findings come from the real data. A number that depends on the filters is computed;
-  a fixed number is checked against the processed tables in the Saturday consistency pass (Q1).
+- A finding talks only about what is on screen, and its numbers are computed from the data.
 - Write "waypoint" in full in sentences; "WP1" is fine as a label on the chart.
-- Name people, not roles: "Made by İlayda Demir", not "Author: Data role".
+- Name people, not roles: "This chart was made by İlayda Demir."
 
 **Widget keys** are unique and start with the chart scope (`sankey_`, `stc_`, `pcp_`, ...).
 
