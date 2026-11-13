@@ -54,7 +54,7 @@ def _prepare_splom_frame(
     flights: pd.DataFrame,
     color_by: str,
     labels: pd.Series | Sequence[str] | None = None,
-) -> tuple[pd.DataFrame, str, list[tuple[Any, str, str]]]:
+) -> tuple[pd.DataFrame, str, list[tuple[int, str, str]]]:
     """Validate required columns, derive voltage drop, and resolve value-mapped colours."""
     df = flights.copy().reset_index(drop=True)
 

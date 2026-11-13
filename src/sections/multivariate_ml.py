@@ -72,7 +72,8 @@ def _build_splom_finding(flights: pd.DataFrame) -> str:
         elif len(by_speed_wh) == 1:
             s_only = by_speed_wh.index[0]
             parts.append(
-                f"At {s_only:g} m/s, median energy per kilometre is {by_speed_wh.iloc[0]:.1f} Wh/km."
+                f"At {s_only:g} m/s, median energy per kilometre is "
+                f"{by_speed_wh.iloc[0]:.1f} Wh/km."
             )
 
     if {"speed_mps", "cruise_power_w"}.issubset(flights.columns):
