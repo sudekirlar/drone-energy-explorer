@@ -8,8 +8,7 @@ A card has fixed parts, always in this order (docs/interfaces.md, "Card pattern"
     chart        the Plotly figure
     finding      optional: one or two sentences computed from what is on screen
     about        a folded box of short paragraphs: why the chart is useful, how it encodes
-                 the data, what you can do, the lecture behind it, which flights it uses,
-                 and who made it
+                 the data, what you can do, which flights it uses, and who made it
 
 Sections fill a ``CardInfo`` with the texts and draw their controls and chart inside
 ``chart_card``:
