@@ -43,8 +43,7 @@ def test_run_kmeans_orders_labels_by_energy() -> None:
 
 
 def test_run_kmeans_on_project_sample_flights() -> None:
-    all_all_flights = load_table("flights")
-    flights = all_flights.loc[all_flights["in_design"]].reset_index(drop=True)
+    all_flights = load_table("flights")
     flights = all_flights.loc[all_flights["in_design"]].reset_index(drop=True)
     res = run_kmeans(flights, k=3)
 
