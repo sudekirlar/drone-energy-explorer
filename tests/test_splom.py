@@ -8,6 +8,7 @@ import plotly.graph_objects as go
 import pytest
 
 from src.charts.splom import SPLOM_AXES, build_splom
+from src.theme import PALETTES
 
 
 def _sample_splom_flights(n: int = 18) -> tuple[pd.DataFrame, pd.Series]:
@@ -51,6 +52,15 @@ def test_build_splom_lower_triangle_hidden_diagonal_and_select_mode(color_by: st
     assert "Voltage drop (V)" in dim_labels
     assert all("anemometer" not in lbl.lower() for lbl in dim_labels)
     assert all("energy (wh)" not in lbl.lower() for lbl in dim_labels)
+
+
+def test_build_splom_maps_colors_by_value_not_position() -> None:
+    df, _ = _sample_splom_flights()
+    filtered = df[df["payload_g"] != 0].reset_index(drop=True)
+    fig = build_splom(filtered, color_by="payload")
+
+    trace_250 = next(t for t in fig.data if t.name == "250 g")
+    assert trace_250.marker.color == PALETTES["payload"][250]
 
 
 def test_build_splom_rejects_unknown_color_mode() -> None:

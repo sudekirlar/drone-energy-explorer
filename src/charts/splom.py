@@ -7,7 +7,7 @@ from collections.abc import Sequence
 import pandas as pd
 import plotly.graph_objects as go
 
-from src import theme
+from src.theme import PALETTES
 
 SPLOM_AXES: tuple[tuple[str, str], ...] = (
     ("speed_mps", "Speed (m/s)"),
@@ -17,33 +17,45 @@ SPLOM_AXES: tuple[tuple[str, str], ...] = (
     ("voltage_drop_v", "Voltage drop (V)"),
 )
 
-DEFAULT_DISCRETE_COLORS: tuple[str, ...] = (
-    "#0072B2",
-    "#009E73",
-    "#E69F00",
-    "#CC79A7",
-    "#56B4E9",
-    "#D55E00",
-)
+ALTITUDE_COLOR_MAP: dict[int, str] = {
+    25: PALETTES["viridis"][0],
+    50: PALETTES["viridis"][1],
+    75: PALETTES["viridis"][2],
+    100: PALETTES["viridis"][3],
+    125: PALETTES["viridis"][4],
+    150: PALETTES["viridis"][5],
+}
 
 
-def _get_palette(key: str, fallback: Sequence[str]) -> list[str]:
-    for attr in ("PALETTE", "PALETTES", "COLORS", "COLOR_PALETTE"):
-        obj = getattr(theme, attr, None)
-        if isinstance(obj, dict) and key in obj:
-            val = obj[key]
-            if isinstance(val, dict):
-                return list(val.values())
-            return list(val)
-    return list(fallback)
+def _color_for_payload(payload_g: int) -> str:
+    payload_palette = PALETTES["payload"]
+    if payload_g in payload_palette:
+        return payload_palette[payload_g]
+    keys = sorted(payload_palette.keys())
+    return payload_palette[keys[payload_g % len(keys)]]
+
+
+def _color_for_altitude(altitude_m: int) -> str:
+    if altitude_m in ALTITUDE_COLOR_MAP:
+        return ALTITUDE_COLOR_MAP[altitude_m]
+    viridis = PALETTES["viridis"]
+    idx = min(max(int(round(altitude_m / 25.0)) - 1, 0), len(viridis) - 1)
+    return viridis[idx]
+
+
+def _color_for_cluster(label: str) -> str:
+    categorical = PALETTES["categorical"]
+    digits = "".join(ch for ch in str(label) if ch.isdigit())
+    idx = (int(digits) - 1) if digits else 0
+    return categorical[idx % len(categorical)]
 
 
 def _prepare_splom_frame(
     flights: pd.DataFrame,
     color_by: str,
     labels: pd.Series | Sequence[str] | None = None,
-) -> tuple[pd.DataFrame, str]:
-    """Validate required columns, derive voltage drop, and resolve color grouping."""
+) -> tuple[pd.DataFrame, str, list[tuple[Any, str, str]]]:
+    """Validate required columns, derive voltage drop, and resolve value-mapped colours."""
     df = flights.copy().reset_index(drop=True)
 
     if "voltage_drop_v" not in df.columns:
@@ -64,48 +76,40 @@ def _prepare_splom_frame(
     if mode in {"payload", "payload_g"}:
         if "payload_g" not in df.columns:
             raise KeyError("flights must contain 'payload_g' when color_by='payload'.")
-        df["_color_group"] = df["payload_g"].map(lambda v: f"{int(v)} g" if pd.notna(v) else "NA")
+        df = df.dropna(subset=required + ["payload_g"]).reset_index(drop=True)
+        df["_group_key"] = df["payload_g"].astype(int)
+        unique_keys = sorted(df["_group_key"].unique().tolist())
+        groups = [(k, f"{k} g", _color_for_payload(int(k))) for k in unique_keys]
         legend_title = "Payload (g)"
     elif mode in {"altitude", "altitude_m"}:
         if "altitude_m" not in df.columns:
             raise KeyError("flights must contain 'altitude_m' when color_by='altitude'.")
-        df["_color_group"] = df["altitude_m"].map(
-            lambda v: f"{int(round(float(v)))} m" if pd.notna(v) else "NA"
-        )
+        df = df.dropna(subset=required + ["altitude_m"]).reset_index(drop=True)
+        df["_group_key"] = df["altitude_m"].round().astype(int)
+        unique_keys = sorted(df["_group_key"].unique().tolist())
+        groups = [(k, f"{k} m", _color_for_altitude(int(k))) for k in unique_keys]
         legend_title = "Altitude (m)"
     elif mode in {"cluster", "kmeans", "k-means"}:
         if labels is not None:
-            df["_color_group"] = pd.Series(labels, index=df.index).astype(str)
+            df["_raw_cluster"] = pd.Series(labels, index=df.index).astype(str)
         elif "cluster" in df.columns:
-            df["_color_group"] = df["cluster"].astype(str)
+            df["_raw_cluster"] = df["cluster"].astype(str)
         else:
             raise KeyError(
                 "labels must be provided (or 'cluster' column present) when color_by='cluster'."
             )
-        legend_title = "K-means cluster"
+        df = df.dropna(subset=required).reset_index(drop=True)
+        df = df[df["_raw_cluster"].notna() & (df["_raw_cluster"] != "nan")].reset_index(drop=True)
+        df["_group_key"] = df["_raw_cluster"].str.extract(r"(\d+)", expand=False).astype(int)
+        unique_keys = sorted(df["_group_key"].unique().tolist())
+        groups = [(k, f"Group {k}", _color_for_cluster(f"G{k}")) for k in unique_keys]
+        legend_title = "K-means group"
     else:
         raise ValueError(
             f"Unsupported color_by={color_by!r}. Expected 'payload', 'cluster', or 'altitude'."
         )
 
-    keep_cols = required + ["_color_group"]
-    if "flight" in df.columns:
-        keep_cols.append("flight")
-    df = df.dropna(subset=required).reset_index(drop=True)
-    df = df[df["_color_group"].notna() & (df["_color_group"] != "nan")].reset_index(drop=True)
-    return df, legend_title
-
-
-def _ordered_groups(series: pd.Series, mode: str) -> list[str]:
-    unique_vals = [str(v) for v in series.dropna().unique()]
-    if mode in {"payload", "payload_g", "altitude", "altitude_m"}:
-        return sorted(
-            unique_vals,
-            key=lambda s: (
-                float(s.split()[0]) if s.split()[0].replace(".", "", 1).isdigit() else 0.0
-            ),
-        )
-    return sorted(unique_vals)
+    return df, legend_title, groups
 
 
 def build_splom(
@@ -114,32 +118,26 @@ def build_splom(
     labels: pd.Series | Sequence[str] | None = None,
 ) -> go.Figure:
     """Build a 5-variable lower-triangle SPLOM with linked box selection."""
-    df, legend_title = _prepare_splom_frame(flights, color_by=color_by, labels=labels)
+    df, legend_title, groups = _prepare_splom_frame(flights, color_by=color_by, labels=labels)
     if df.empty:
         fig = go.Figure()
         fig.update_layout(title="No complete flights available for scatterplot matrix")
         return fig
 
-    mode = color_by.strip().lower()
-    groups = _ordered_groups(df["_color_group"], mode=mode)
-    palette_key = "payload" if mode in {"payload", "payload_g"} else "categorical"
-    colors = _get_palette(palette_key, DEFAULT_DISCRETE_COLORS)
-
     fig = go.Figure()
-    for idx, group_val in enumerate(groups):
-        sub = df[df["_color_group"] == group_val]
-        color = colors[idx % len(colors)]
+    for key_val, display_name, color in groups:
+        sub = df[df["_group_key"] == key_val]
         dimensions = [
             {"label": label, "values": sub[col].to_numpy(dtype=float)} for col, label in SPLOM_AXES
         ]
         hover_text = (
-            [f"Flight {int(f)} · {group_val}" for f in sub["flight"]]
+            [f"Flight {int(f)} · {display_name}" for f in sub["flight"]]
             if "flight" in sub.columns
-            else [group_val] * len(sub)
+            else [display_name] * len(sub)
         )
         fig.add_trace(
             go.Splom(
-                name=group_val,
+                name=display_name,
                 dimensions=dimensions,
                 text=hover_text,
                 showupperhalf=False,
