@@ -73,11 +73,31 @@ def build_timeline(
                             "dash": "dot",
                         },
                     )
+        # A key for the band colours. An annotation, not extra traces, so the line legend
+        # keeps only the five measures.
+        shown = [p for p in PALETTES["phase"] if p in set(phases)]
+        key = "   ".join(f"<span style='color:{PALETTES['phase'][p]}'>■</span> {p}" for p in shown)
+        if "sub_phase" in data and (data["sub_phase"] == "WP turn").any():
+            key += (
+                f"   <span style='color:{PALETTES['sub_phase']['WP turn']}'>⋮</span> waypoint turn"
+            )
+        fig.add_annotation(
+            text=f"Estimated phases:   {key}",
+            xref="paper",
+            yref="paper",
+            x=0,
+            y=1.0,
+            xanchor="left",
+            yanchor="bottom",
+            showarrow=False,
+            font={"size": 12},
+        )
     fig.update_layout(
         title=f"Flight {flight_id} • power, speed, altitude and voltage",
         height=800,
         hovermode="x unified",
-        legend={"orientation": "h"},
-        margin={"t": 72, "b": 32},
+        # The measures' legend goes under the chart; the phase key sits above it.
+        legend={"orientation": "h", "x": 0, "xanchor": "left", "y": -0.09, "yanchor": "top"},
+        margin={"t": 72, "b": 90},
     )
     return fig

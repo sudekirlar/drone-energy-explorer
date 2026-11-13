@@ -17,112 +17,173 @@ from src.charts.timeline import build_timeline
 from src.sections.common import CardInfo, chart_card
 
 AUTHOR = "İlayda Demir"
+LEGS = ("Straight leg", "Sloped cruise")
 
 MAP = CardInfo(
-    title="Power changes along the route only when the drone flies fast.",
+    title="Flight routes",
     how_to_read=(
-        "Each dot is one second of the flight, coloured by the measure you choose. "
-        "The dark dot (H) is the take-off point and the white rings are the estimated waypoints."
+        "Each dot is one second of a flight, and its colour shows the measure you choose. "
+        "The black dot marks the take-off point, and the white rings mark the estimated "
+        "waypoints."
     ),
-    data=(
-        "Every flight that passes the sidebar filters. Tick 'Include R2–R7' to see the other "
-        "routes."
-    ),
-    finding=(
-        "At 4 m/s (flight 8) the three legs draw almost the same power. At 12 m/s (flight 77) "
-        "the drone slows below 1 m/s at each waypoint, so the colour changes at the corners."
-    ),
-    why=(
-        "The routes were flown over real ground, so a map is the most natural way to show where "
-        "the drone was and where it used energy."
-    ),
-    encoding=(
-        "Position shows where the drone was. Colour shows the chosen measure on one sequential "
-        "scale (Viridis), shared by both maps. The dark dot and the white rings mark the plan: "
-        "the take-off point and the waypoints."
-    ),
-    interaction=(
-        "Choose a route and two of its flights (select). Change the colour measure (encode). "
-        "Zoom and pan (explore), and hover for details. Send the flights to the 3D view or the "
-        "timeline (connect)."
-    ),
-    lecture=(
-        "Lecture 7, trajectories. Minard's map of Napoleon's campaign draws a path on a map and "
-        "shows a quantity along it; here the quantity is power instead of the army's size."
+    about=(
+        "This map shows the route that each flight really flew, in the same way that a ground "
+        "station such as Mission Planner shows a drone's track over the ground. It lets you check "
+        "that the drone followed its planned route and see where on that route it used more "
+        "power.",
+        "Each dot sits at the drone's real GPS position. Both maps use one sequential colour "
+        "scale (Viridis), so the same colour means the same value in flight A and in flight B. "
+        "When you put a slow flight next to a fast flight on the same route, you can see how "
+        "speed changes the power along the path.",
+        "You can choose a route and two of its flights, change the colour measure, zoom, pan and "
+        "hover over a dot to read its values. The buttons under the maps send the flights to the "
+        "3D view or to the timeline.",
+        "The idea comes from Lecture 7 on trajectories. There, Minard's map of Napoleon's "
+        "campaign draws a path on a map and shows a quantity along it.",
+        "The map uses every flight that passes the sidebar filters. Tick 'Include R2–R7' in the "
+        "sidebar to see the routes other than R1.",
     ),
     author=AUTHOR,
 )
 
 CUBE = CardInfo(
-    title="The 3D view shows the time and altitude that the map hides.",
+    title="Space–time cube",
     how_to_read=(
-        "The floor is the map, in metres east and north. Height is time since take-off or "
-        "altitude. A steep line means a slow flight; a vertical piece means the drone stood still."
+        "The floor of the cube is the map, and the height is the time since take-off or the "
+        "altitude. A steep line means a slow flight, and a vertical line means that the drone "
+        "stood still."
     ),
-    data=(
-        "Up to four flights from any route. By default: R7 flight 278 and two R1 flights at 4 and "
-        "12 m/s (flights 8 and 77)."
-    ),
-    finding=(
-        "Flight 8 (4 m/s) climbs the time axis slowly and lasts about 160 s; flight 77 (12 m/s) "
-        "takes about 100 s and pauses at each waypoint. On the altitude axis, flight 278 on R7 "
-        "climbs in steps from 25 m to about 94 m."
-    ),
-    why=(
-        "A map loses two real dimensions: time and altitude. A space-time cube shows both, which "
-        "is worth the cost of 3D here."
-    ),
-    encoding=(
-        "Position on the floor is position on the map. Height is time since take-off or "
-        "altitude. Colour is the estimated phase by default, with the same colours as the map and "
-        "the timeline."
-    ),
-    interaction=(
-        "Rotate the cube (reconfigure). Switch the vertical axis or the colour (encode). Pick up "
-        "to four flights (select), or bring them from the map (connect)."
-    ),
-    lecture=(
-        "Lecture 7, space-time cubes: Hägerstrand's idea as presented by Kraak (2003). The lecture "
-        "also lists the costs of 3D (hidden lines, distorted lengths), so the view shows at most "
-        "four flights and starts from a fixed angle."
+    about=(
+        "A map cannot show when the drone was at a place or how high it flew. This 3D view adds "
+        "the missing dimension, so you can compare the pace of different flights and see how "
+        "they climbed.",
+        "With time as the height, a fast flight draws a short and flat line, and a slow flight "
+        "draws a tall and steep one. With altitude as the height, you can see the vertical climb "
+        "at take-off and the stepped climb on route R7. By default the colour shows the "
+        "estimated phase, with the same colours as the map and the timeline.",
+        "You can rotate the cube, switch the height between time and altitude, change the colour "
+        "and choose up to four flights. Flights that you send from the map appear here.",
+        "The space–time cube comes from Lecture 7, which presents the idea of Hägerstrand and "
+        "Kraak. The lecture also warns about the costs of 3D, such as lines that hide each "
+        "other. For this reason the view shows at most four flights and starts from a fixed "
+        "angle.",
+        "By default the cube shows flight 278 on route R7 and flights 8 and 77 on route R1, "
+        "which fly at 4 m/s and 12 m/s.",
     ),
     author=AUTHOR,
 )
 
 TIMELINE = CardInfo(
-    title="Inside one flight, the estimated phases match the changes in power, speed and altitude.",
+    title="Inside one flight",
     how_to_read=(
-        "Four panels share one time axis: power, speed, altitude and battery voltage. Coloured "
-        "bands show the estimated phases, and dotted lines mark the waypoint turns."
+        "The four panels share one time axis and show power, speed, altitude and battery "
+        "voltage. The coloured bands show the estimated phases, and the dotted lines mark the "
+        "waypoint turns."
     ),
-    data=(
-        "One flight from any route. By default: R1 flight 77 (12 m/s, 0 g, 25 m), where every "
-        "phase is easy to see."
-    ),
-    finding=(
-        "In flight 77 the drone slows below 1 m/s at every waypoint. The battery voltage falls "
-        "from 24.5 V to about 21.4 V during the flight but returns to 24.2 V after landing, so "
-        "most of the drop is a temporary sag under load, not a discharged battery."
-    ),
-    why=(
-        "The other charts give each flight one number. This chart looks inside a single flight, "
-        "and it lets us check the estimated phases by eye."
-    ),
-    encoding=(
-        "Time runs from left to right. Each measure has its own panel and unit, instead of two "
-        "y-axes on one chart. The background colour shows the estimated phase."
-    ),
-    interaction=(
-        "Pick a flight (select), or open one from the map (connect). Zoom into one panel and the "
-        "others follow (explore). Hover to see all four values at the same moment. Turn the phase "
-        "bands on or off (encode)."
-    ),
-    lecture=(
-        "Lecture 7, time series: the most direct way to follow a change over time. Small panels "
-        "replace a misleading second y-axis."
+    about=(
+        "The other charts describe each flight with a few numbers. This chart looks inside a "
+        "single flight and shows how its measures change together from take-off to landing.",
+        "It also lets us check the estimated phases by eye. Each phase band should begin where "
+        "the power, the speed or the altitude changes.",
+        "Each measure has its own panel and its own unit, because two units on one chart with "
+        "two y-axes can mislead the reader. Time runs from left to right, as in the time series "
+        "of the lectures. The speed panel also shows the anemometer, which measures the drone's "
+        "airspeed and not the wind.",
+        "You can choose a flight, zoom into one panel while the others follow, hover to read all "
+        "four values at the same moment, and turn the phase bands on or off.",
+        "Time series are covered in Lecture 7 as the most direct way to follow a change over "
+        "time. The chart works for one flight from any route.",
     ),
     author=AUTHOR,
 )
+
+
+def _join(items: list[str]) -> str:
+    """'a', 'a and b', 'a, b and c'."""
+    return items[0] if len(items) == 1 else ", ".join(items[:-1]) + " and " + items[-1]
+
+
+def _airborne(rows: pd.DataFrame) -> pd.DataFrame:
+    return rows.loc[rows["phase"] != "Ground"] if "phase" in rows else rows
+
+
+def describe_map(telemetry: pd.DataFrame, flight_ids: list[int], label) -> str | None:
+    """Power on the straight legs and in the waypoint turns of the flights on screen."""
+    if "sub_phase" not in telemetry:
+        return None
+    sentences = []
+    for flight in flight_ids:
+        rows = telemetry.loc[telemetry["flight"] == flight]
+        leg = rows.loc[rows["sub_phase"].isin(LEGS), "power_w"].mean()
+        turn = rows.loc[rows["sub_phase"] == "WP turn", "power_w"].mean()
+        if pd.isna(leg):
+            continue
+        name = f"Flight {flight} ({label(flight).split(' · ')[1].split(',')[0]})"
+        if pd.isna(turn):
+            sentences.append(f"{name} uses about {leg:.0f} W on its straight legs.")
+        else:
+            sentences.append(
+                f"{name} uses about {leg:.0f} W on its straight legs and {turn:.0f} W in its "
+                "waypoint turns."
+            )
+    return " ".join(sentences) or None
+
+
+def describe_cube(telemetry: pd.DataFrame, flight_ids: list[int], z_axis: str) -> str | None:
+    """Time in the air, or highest altitude, of the flights on screen."""
+    if z_axis == "Time (s)" and "t_since_takeoff_s" not in telemetry:
+        return None
+    parts = []
+    for flight in flight_ids:
+        rows = _airborne(telemetry.loc[telemetry["flight"] == flight])
+        if rows.empty:
+            continue
+        if z_axis == "Time (s)" and "t_since_takeoff_s" in rows:
+            seconds = rows["t_since_takeoff_s"].max() - max(rows["t_since_takeoff_s"].min(), 0)
+            parts.append((flight, f"{seconds:.0f} s"))
+        else:
+            parts.append((flight, f"{rows['alt_rel_m'].max():.0f} m"))
+    if not parts:
+        return None
+    if z_axis == "Time (s)":
+        first, rest = parts[0], parts[1:]
+        text = f"Flight {first[0]} is in the air for about {first[1]}"
+        tail = [f"flight {f} for about {v}" for f, v in rest]
+    else:
+        first, rest = parts[0], parts[1:]
+        text = f"Flight {first[0]} climbs to about {first[1]}"
+        tail = [f"flight {f} to about {v}" for f, v in rest]
+    return _join([text, *tail]) + "."
+
+
+def describe_timeline(telemetry: pd.DataFrame, flight: int) -> str | None:
+    """Waypoint turns and the voltage sag of the flight on screen."""
+    rows = telemetry.loc[telemetry["flight"] == flight].sort_values("t_s")
+    if rows.empty or "phase" not in rows:
+        return None
+    sentences = []
+    if "sub_phase" in rows:
+        in_turn = rows["sub_phase"].eq("WP turn")
+        turns = int((in_turn & ~in_turn.shift(fill_value=False)).sum())
+        if turns:
+            slowest = rows.loc[in_turn, "ground_speed_mps"].min()
+            word = "turn" if turns == 1 else "turns"
+            sentences.append(
+                f"Flight {flight} makes {turns} waypoint {word} and slows down to "
+                f"{slowest:.1f} m/s in them."
+            )
+    air = _airborne(rows)
+    before = (
+        rows.loc[rows["t_since_takeoff_s"] < 0, "voltage_v"] if "t_since_takeoff_s" in rows else []
+    )
+    if len(air) and len(before):
+        subject = "Its battery voltage" if sentences else f"The battery voltage of flight {flight}"
+        sentences.append(
+            f"{subject} drops from {before.iloc[:5].median():.1f} V before take-off "
+            f"to {air['voltage_v'].min():.1f} V in the air, and it is back at "
+            f"{rows['voltage_v'].iloc[-5:].median():.1f} V after landing."
+        )
+    return " ".join(sentences) or None
 
 
 def _flight_label(flights: pd.DataFrame) -> Callable[[int], str]:
@@ -203,6 +264,7 @@ def map_card(flights, telemetry, waypoints, all_ids, label) -> None:
                     ),
                     key=f"map_chart_{slot}",
                 )
+        card.finding = describe_map(telemetry, selected, label)
 
         buttons = st.columns(3)
         if buttons[0].button("Send these flights to the 3D view", key="map_to_cube"):
@@ -244,6 +306,7 @@ def cube_card(telemetry, all_ids, label) -> None:
         )
         if choices:
             card.plot(build_space_time_cube(telemetry, choices, z_axis, color), key="cube_plot")
+            card.finding = describe_cube(telemetry, choices, z_axis)
         else:
             st.info("Choose at least one flight.")
 
@@ -258,3 +321,4 @@ def timeline_card(telemetry, all_ids, label) -> None:
         st.session_state["timeline_flight"] = flight
         show = col2.checkbox("Show estimated phases", value=True, key="timeline_show_phase")
         card.plot(build_timeline(telemetry, flight, show), key="timeline_plot")
+        card.finding = describe_timeline(telemetry, flight)

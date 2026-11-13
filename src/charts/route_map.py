@@ -49,14 +49,14 @@ def _airborne(rows: pd.DataFrame) -> pd.DataFrame:
 
 
 def _fit_zoom(lat: pd.Series, lon: pd.Series, width_px: int = 600, height_px: int = 400) -> float:
-    """Web-Mercator zoom at which the track fits the map (a little margin, clamped)."""
+    """Web-Mercator zoom that shows the whole track with its surroundings (clamped)."""
     cos_lat = math.cos(math.radians(float(lat.mean())))
     east_m = max(float(lon.max() - lon.min()) * 111_320 * cos_lat, 20.0)
     north_m = max(float(lat.max() - lat.min()) * 110_540, 20.0)
     metres_per_pixel_at_zoom_0 = 156_543.03 * cos_lat
     zoom_x = math.log2(width_px * metres_per_pixel_at_zoom_0 / east_m)
     zoom_y = math.log2(height_px * metres_per_pixel_at_zoom_0 / north_m)
-    return max(10.0, min(18.0, min(zoom_x, zoom_y) - 0.4))
+    return max(10.0, min(18.0, min(zoom_x, zoom_y) - 1.5))  # room for the surroundings
 
 
 def build_route_map(
