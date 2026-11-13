@@ -79,7 +79,7 @@ def _build_wh_per_km_by_speed(tables: dict[str, pd.DataFrame]) -> tuple[go.Figur
 
 
 def render(tables: dict[str, pd.DataFrame]) -> None:
-    """Render Pelin's shared T4 card and KPIs, followed by Data's E1 evidence."""
+    """Render Pelin's shared T4 card with Data's E1 KPIs and quality evidence."""
     flights = tables["flights"]
     st.markdown("### Overview & Data Quality")
 
@@ -87,16 +87,11 @@ def render(tables: dict[str, pd.DataFrame]) -> None:
         st.info("No flights match the current filter selection.")
         return
 
-    n_flights = int(flights["flight"].nunique())
-    mean_energy = float(flights["energy_wh"].mean()) if len(flights) else 0.0
-    mean_power = float(flights["mean_power_w"].mean()) if len(flights) else 0.0
-    outlier_count = int(flights["is_outlier"].sum()) if len(flights) else 0
-
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Filtered Flights", f"{n_flights:,}")
-    col2.metric("Mean Energy (Wh)", f"{mean_energy:.1f}")
-    col3.metric("Mean Power (W)", f"{mean_power:.1f}")
-    col4.metric("Flagged Outliers", f"{outlier_count:,}")
+    cols = st.columns(4)
+    cols[0].metric("Flights", f"{flights['flight'].nunique():,}")
+    cols[1].metric("Total flight duration", f"{flights['duration_s'].sum() / 3600:,.1f} h")
+    cols[2].metric("Total GPS distance", f"{flights['distance_m'].sum() / 1000:,.1f} km")
+    cols[3].metric("Median energy", f"{flights['energy_wh'].median():,.1f} Wh")
 
     render_example_card(
         title="Energy consumption across experimental conditions",
@@ -157,7 +152,10 @@ def render(tables: dict[str, pd.DataFrame]) -> None:
         columns=["Characteristic", "Evidence / limitation"],
     )
     st.dataframe(quality_notes, width="stretch", hide_index=True)
-    st.caption("Do not claim statistical significance without a documented test.")
+    st.caption(
+        "No statistically significant day effect was detected in the energy residuals "
+        "(Kruskal–Wallis, p ≈ 0.09; see D1 in docs/decisions.md)."
+    )
 
     with st.expander("Data dictionary · columns, units and producers"):
         st.dataframe(
