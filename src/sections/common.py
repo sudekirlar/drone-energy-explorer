@@ -70,7 +70,7 @@ def chart_card(info: CardInfo) -> Iterator[Card]:
         if card.finding:
             st.info(card.finding)
         with st.expander("About this chart"):
-            st.markdown("\n\n".join([*info.about, f"This chart was made by {info.author}."]))
+            st.markdown("\n\n".join([*info.about, f"This chart was made by **{info.author}**."]))
 
 
 @st.fragment
