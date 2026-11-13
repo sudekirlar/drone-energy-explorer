@@ -83,6 +83,37 @@ must not be treated as equivalent. See [DATASHEET.md](DATASHEET.md) for provenan
 limitations and validation. Estimated phases and waypoint markers are produced by the
 Platform pipeline from the cleaned telemetry.
 
+## Chart evaluation (Q3 ? 6-criteria framework)
+
+Each of the ten dashboard charts (G1?G10) is rated on a 1?5 scale across the six course evaluation criteria:
+
+1. **Task fit** ? answers a concrete analytical question for the flight-energy domain.
+2. **Data integrity** ? preserves true units, unclipped scales, or explicit cut-axis notes.
+3. **Visual encoding** ? matches variable types to position, length, angle, or hue (Lecture 3?5).
+4. **Clutter control** ? avoids overplotting, unreadable labels, and empty cells (Lecture 5?7).
+5. **Interaction** ? provides filtering, view switching, or cross-chart linking where earned.
+6. **Colour safety** ? uses colourblind-safe palettes and consistent semantics across views.
+
+| Chart | Task fit | Data integrity | Visual encoding | Clutter control | Interaction | Colour safety | Short note |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|---|
+| **G1 ? Flight routes** | 5 | 5 | 5 | 4 | 5 | 5 | Matched colour scales across two flights and direct send-to-3D/timeline linking. |
+| **G2 ? Space?time cube** | 5 | 4 | 4 | 3 | 5 | 5 | Earns 3D via time-by-default vertical axis (D2); 3D perspective/occlusion mitigated by 4-flight cap. |
+| **G3 ? Inside one flight** | 5 | 5 | 5 | 4 | 5 | 5 | Synchronized multi-panel time series with phase bands and anemometer airspeed separation (D3). |
+| **G4 ? Energy & power overview** | 5 | 5 | 5 | 5 | 4 | 5 | Clear baseline distribution across R1 configurations with joint-deviation outlier toggle (D4). |
+| **G5 ? Factor effects (speed ? altitude ? payload)** | 5 | 5 | 5 | 4 | 4 | 5 | Small-multiples layout separates payload and altitude interactions without 3D distortion. |
+| **G6 ? Cruise power regression (RF vs Linear)** | 5 | 5 | 5 | 4 | 5 | 5 | Observed, predicted, and residual views expose non-linear speed scaling directly (D5). |
+| **G7 ? Parallel coordinates & K-means clusters** | 4 | 5 | 4 | 3 | 5 | 5 | Polylines across 6 metrics can overlap on 181 flights; brush filters and shared `kmeans_k` isolate clusters. |
+| **G8 ? Lower-triangle scatter-plot matrix (SPLOM)** | 4 | 5 | 5 | 3 | 5 | 5 | Lower-triangle layout removes duplicate panels; `opacity=0.65` and box/lasso selection link to G7. |
+| **G9 ? Power by phase and payload (violin)** | 5 | 4 | 5 | 4 | 4 | 5 | Monochromatic payload shades compare 4 phases ? 3 payloads; cut Y-axis is explicitly annotated. |
+| **G10 ? Flight ? time heatmap** | 5 | 5 | 4 | 4 | 5 | 5 | Replaces sparse calendar heatmap (D1); 2 s slices and group separators reveal climb-band widening. |
+
+### What we did about weak criteria
+
+- **3D occlusion & clutter (G2, score 3/5 in clutter control):** Set the vertical axis to elapsed time by default (`D2`), removed the redundant top-down preset, and capped overlays at four flights.
+- **Overplotting in high-density multivariate views (G7 & G8, score 3/5 in clutter control):** Restricted G8 to the lower triangle (`diagonal_visible=False`), used `opacity=0.65`, hid individual points by default in G9 behind a `Show flight points` checkbox, and added brush/lasso selection linking between G7 and G8.
+- **Sparse matrix cells (G10, replacing calendar heatmap):** Replaced the 214-day calendar heatmap (only 16 active days) with a dense 181-flight ? 2 s telemetry heatmap sortable by altitude, speed, payload, or K-means cluster (`D1`).
+- **Cut-axis honesty (G9, score 4/5 in data integrity):** Added an explicit on-chart annotation whenever the power Y-axis starts above 0 W so baseline differences are not visually exaggerated.
+
 ## Machine learning
 
 TODO: K-means clustering and Random Forest regression, evaluation and limitations.
