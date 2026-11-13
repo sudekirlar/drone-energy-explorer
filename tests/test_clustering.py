@@ -6,12 +6,12 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from src.data.loader import load_table
 from src.ml.clustering import CLUSTER_FEATURES, run_kmeans
 
 
 def _make_sample_flights(n: int = 45, seed: int = 42) -> pd.DataFrame:
     rng = np.random.default_rng(seed)
-    # Three distinct energy regimes to verify G1 < G2 < G3 ordering
     regime = np.repeat([0, 1, 2], n // 3)
     payloads = np.where(regime == 0, 0, np.where(regime == 1, 250, 500))
     base_energy = 40.0 + regime * 35.0 + rng.normal(0, 3.0, size=n)
@@ -33,14 +33,21 @@ def test_run_kmeans_orders_labels_by_energy() -> None:
     flights = _make_sample_flights()
     res = run_kmeans(flights, k=3)
 
-    assert list(res.labels.dropna().unique()) != []
     assert set(res.labels.dropna().unique()) == {"G1", "G2", "G3"}
     assert -1.0 <= res.silhouette <= 1.0
 
-    # G1 must have lowest mean energy, G3 highest
     means = res.cluster_summary.set_index("cluster")["mean_energy_wh"]
     assert means["G1"] < means["G2"] < means["G3"]
-    # Lowest energy cluster (G1) should contain no 500 g flights
+    g1_payloads = flights.loc[res.labels == "G1", "payload_g"]
+    assert (g1_payloads == 500).sum() == 0
+
+
+def test_run_kmeans_on_project_sample_flights() -> None:
+    flights = load_table("flights")
+    res = run_kmeans(flights, k=3)
+
+    assert set(res.labels.dropna().unique()) == {"G1", "G2", "G3"}
+    assert 0.15 <= res.silhouette <= 0.65
     g1_payloads = flights.loc[res.labels == "G1", "payload_g"]
     assert (g1_payloads == 500).sum() == 0
 
