@@ -1,165 +1,218 @@
-"""Overview & Data Quality section (owner: Data, T4 scaffold by UI & ML)."""
+"""Overview: the landing page, followed by how the data was prepared (owner: Data, E1).
+
+The top of the page tells a first-time visitor what the dashboard is about and where to go.
+The data quality evidence (assignment item 1) sits underneath in folded boxes.
+"""
 
 from __future__ import annotations
 
 import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
 import streamlit as st
 
 from src.data.schema import data_dictionary
-from src.sections.common import render_example_card
-from src.theme import PALETTES
+
+REPO_URL = "https://github.com/sudekirlar/drone-energy-explorer"
+DATA_DOI = "https://doi.org/10.1184/R1/12683453"
+
+# (menu name, question, charts, author). Menu names must match the sections in app.py.
+SECTIONS = [
+    (
+        "Flight & Temporal",
+        "Where, when and how did the drone fly?",
+        "A route map, a space–time cube and a timeline of one flight.",
+        "İlayda Demir",
+    ),
+    (
+        "Energy & Conditions",
+        "Where does the energy go, and how do payload, speed and altitude change it?",
+        "An energy budget (Sankey), a tree of the experiment and a payload–speed heat map "
+        "with a Random Forest model.",
+        "Sude Kırlar",
+    ),
+    (
+        "Multivariate & ML",
+        "Which flights are alike, and how are their measures related?",
+        "Parallel coordinates with K-means groups, a scatterplot matrix, power by phase and "
+        "payload, and all flights over time.",
+        "Pelin Gül Kızılkılıç",
+    ),
+]
+
+QUALITY_COLUMNS = {
+    "rule_id": "Rule",
+    "description": "What it does",
+    "rows_affected": "Rows changed",
+    "flights_affected": "Flights changed",
+    "iso25012": "ISO/IEC 25012 characteristic",
+}
 
 
-def _build_energy_by_payload(tables: dict[str, pd.DataFrame]) -> tuple[go.Figure, str]:
-    flights = tables["flights"]
-    plot_df = flights.copy()
-    plot_df["payload_label"] = plot_df["payload_g"].astype(str) + " g"
-    order = [f"{p} g" for p in sorted(flights["payload_g"].dropna().unique())]
-    color_map = {f"{k} g": v for k, v in PALETTES["payload"].items()}
-
-    fig = px.box(
-        plot_df,
-        x="payload_label",
-        y="energy_wh",
-        color="payload_label",
-        category_orders={"payload_label": order},
-        color_discrete_map=color_map,
-        labels={"payload_label": "Payload (g)", "energy_wh": "Total Energy (Wh)"},
-        title="Total flight energy (Wh) across payload groups",
-    )
-    fig.update_layout(showlegend=False)
-
-    medians = flights.groupby("payload_g")["energy_wh"].median().sort_index()
-    if len(medians) >= 2:
-        low_p, high_p = medians.index[0], medians.index[-1]
-        finding = (
-            f"Filtered median energy shifts from {medians.iloc[0]:.1f} Wh at {low_p} g "
-            f"to {medians.iloc[-1]:.1f} Wh at {high_p} g."
-        )
-    elif len(medians) == 1:
-        only_p = medians.index[0]
-        finding = f"Filtered median energy for {only_p} g payload is {medians.iloc[0]:.1f} Wh."
-    else:
-        finding = "No flights available in the current filter selection."
-
-    return fig, finding
+def _hours_in_air(tables: dict[str, pd.DataFrame]) -> float:
+    """Time outside the Ground phase; the recordings also include time on the ground."""
+    energy = tables.get("phase_energy")
+    if energy is None or energy.empty:
+        return float(tables["flights"]["duration_s"].sum() / 3600)
+    return float(energy.loc[energy["phase"] != "Ground", "duration_s"].sum() / 3600)
 
 
-def _build_wh_per_km_by_speed(tables: dict[str, pd.DataFrame]) -> tuple[go.Figure, str]:
-    flights = tables["flights"]
-    plot_df = flights.copy()
-    plot_df["speed_label"] = plot_df["speed_mps"].astype(str) + " m/s"
-    order = [f"{s} m/s" for s in sorted(flights["speed_mps"].dropna().unique())]
-
-    fig = px.box(
-        plot_df,
-        x="speed_label",
-        y="wh_per_km",
-        color="speed_label",
-        category_orders={"speed_label": order},
-        color_discrete_sequence=PALETTES["viridis"],
-        labels={"speed_label": "Target Speed (m/s)", "wh_per_km": "Energy per km (Wh/km)"},
-        title="Energy per kilometre (Wh/km) across target speeds",
-    )
-    fig.update_layout(showlegend=False)
-
-    medians = flights.groupby("speed_mps")["wh_per_km"].median().sort_values()
-    if not medians.empty:
-        best_s = medians.index[0]
-        finding = (
-            f"Lowest median energy intensity in the current selection is {medians.iloc[0]:.1f} "
-            f"Wh/km at {best_s} m/s."
-        )
-    else:
-        finding = "No flights available in the current filter selection."
-
-    return fig, finding
+def _open_section(name: str) -> None:
+    """Button callback: runs before the next rerun, so the menu can still be changed."""
+    st.session_state["menu_section"] = name
 
 
 def render(tables: dict[str, pd.DataFrame]) -> None:
-    """Render Pelin's shared T4 card with Data's E1 KPIs and quality evidence."""
     flights = tables["flights"]
-    st.markdown("### Overview & Data Quality")
+
+    st.markdown("### Overview")
+    st.markdown(
+        "This dashboard explores how a delivery drone uses its battery. It is built on real "
+        "flights of a DJI Matrice 100 quadcopter, which Carnegie Mellon University flew near "
+        "Pittsburgh with packages of 0, 250 and 500 g."
+    )
+    st.info(
+        "Our main question is how payload, cruise speed and altitude shape the energy that a "
+        "delivery drone uses, and in which part of the flight that energy is spent."
+    )
 
     if flights.empty:
-        st.info("No flights match the current filter selection.")
-        return
-
-    cols = st.columns(4)
-    cols[0].metric("Flights", f"{flights['flight'].nunique():,}")
-    cols[1].metric("Total flight duration", f"{flights['duration_s'].sum() / 3600:,.1f} h")
-    cols[2].metric("Total GPS distance", f"{flights['distance_m'].sum() / 1000:,.1f} km")
-    cols[3].metric("Median energy", f"{flights['energy_wh'].median():,.1f} Wh")
-
-    render_example_card(
-        title="Energy consumption across experimental conditions",
-        how_to_read=(
-            "Each box shows the median, interquartile range, and spread across filtered flights."
-        ),
-        tables=tables,
-        options={
-            "Total Energy (Wh) by Payload": _build_energy_by_payload,
-            "Energy per km (Wh/km) by Speed": _build_wh_per_km_by_speed,
-        },
-        key_prefix="overview_example",
-        about_text=(
-            "CMU drone flight telemetry. These box plots compare the currently filtered "
-            "flights; they do not establish causation or generalize to other drones. "
-            "Data preparation and limitations are documented below."
-        ),
-    )
-
-    st.markdown("#### Dataset context")
-    st.caption(
-        "CMU drone flight telemetry (DJI Matrice 100), routes R1–R7. "
-        "Ground and stationary hover tests are excluded from flight comparisons. "
-        "Battery power is voltage × current; energy is integrated at the original "
-        "sampling rate before 1 Hz resampling. Results should not be generalized "
-        "to other aircraft, batteries, locations or weather conditions."
-    )
-
-    st.markdown("#### Data cleaning and provenance")
-    quality = tables.get("quality_log")
-    if quality is None or quality.empty:
-        st.warning("Quality log is not available for the current data source.")
+        st.warning("No flights match the current filters.")
     else:
-        quality_columns = [
-            "rule_id",
-            "description",
-            "rows_affected",
-            "flights_affected",
-            "iso25012",
-        ]
-        st.dataframe(quality[quality_columns], width="stretch", hide_index=True)
-        if (quality["rule_id"] == "joint-deviation-outliers").any():
-            st.caption(
-                "Outlier counts depend on the documented detection rule. Flagged "
-                "flights are retained; the implementation and original D4 prototype "
-                "reported different counts, which should not be conflated."
+        cols = st.columns(4)
+        cols[0].metric("Flights", f"{flights['flight'].nunique():,}")
+        cols[1].metric("Time in the air", f"{_hours_in_air(tables):,.1f} h")
+        cols[2].metric("Distance flown", f"{flights['distance_m'].sum() / 1000:,.1f} km")
+        cols[3].metric("Median energy per flight", f"{flights['energy_wh'].median():,.1f} Wh")
+        st.caption("These numbers follow the filters in the sidebar.")
+
+    st.markdown("#### What you can explore")
+    for column, (name, question, charts, author) in zip(
+        st.columns(len(SECTIONS)), SECTIONS, strict=True
+    ):
+        with column, st.container(border=True):
+            st.markdown(f"**{name}**")
+            st.markdown(question)
+            st.caption(f"{charts} Made by {author}.")
+            st.button(
+                "Open this section",
+                key=f"overview_open_{name}",
+                on_click=_open_section,
+                args=(name,),
             )
 
-    st.markdown("#### ISO/IEC 25012 quality considerations")
-    quality_notes = pd.DataFrame(
-        [
-            ("Accuracy", "Negative current clipping and inferred clock fixes are documented."),
-            ("Completeness", "Missing telemetry and time gaps require inspection."),
-            ("Consistency", "Route inclusion and outlier flags use explicit rules."),
-            ("Credibility", "Estimated flight phases are not independent ground truth."),
-            ("Traceability", "Original local times are kept alongside corrected times."),
-        ],
-        columns=["Characteristic", "Evidence / limitation"],
+    st.markdown("#### About the data")
+    st.markdown(
+        "The data set has 209 recordings. We use the 196 real flights on seven routes (R1–R7) "
+        "and leave out the ground and hover tests. Most charts use route R1, which is a "
+        "controlled experiment: the drone flies the same triangle every time, and only the "
+        "payload (0, 250 or 500 g), the altitude (25 to 100 m) and the cruise speed (4 to "
+        "12 m/s) change. This lets us compare flights fairly."
     )
-    st.dataframe(quality_notes, width="stretch", hide_index=True)
+    st.markdown(
+        "The results describe one drone model in one place. They should not be applied to "
+        "other drones, batteries or weather conditions without new data."
+    )
     st.caption(
-        "No statistically significant day effect was detected in the energy residuals "
-        "(Kruskal–Wallis, p ≈ 0.09; see D1 in docs/decisions.md)."
+        f"Data: Rodrigues, T. A. et al. (2021), Carnegie Mellon University, "
+        f"[{DATA_DOI}]({DATA_DOI}), CC BY 4.0. Code: [{REPO_URL}]({REPO_URL}). "
+        "Made by Sude Kırlar, İlayda Demir and Pelin Gül Kızılkılıç for CEN445 Introduction to "
+        "Data Visualization, Çukurova University, Fall 2026."
     )
 
-    with st.expander("Data dictionary · columns, units and producers"):
+    st.markdown("#### How we prepared the data")
+    st.markdown(
+        "Power is battery voltage times current, and energy is added up at the original "
+        "sampling rate before the data is reduced to one row per second. The boxes below show "
+        "every cleaning rule, the quality checks and the meaning of each column."
+    )
+    _quality_details(tables)
+
+
+def _quality_details(tables: dict[str, pd.DataFrame]) -> None:
+    quality = tables.get("quality_log")
+    with st.expander("Cleaning rules and how many rows they changed"):
+        if quality is None or quality.empty:
+            st.warning("The cleaning log is not available for the current data.")
+        else:
+            st.dataframe(
+                quality[list(QUALITY_COLUMNS)].rename(columns=QUALITY_COLUMNS),
+                width="stretch",
+                hide_index=True,
+            )
+            st.caption(
+                "Outlier flights stay in the data. Tick 'Hide outlier flights' in the sidebar to "
+                "leave them out of every chart."
+            )
+
+    with st.expander("Quality checks (ISO/IEC 25012)"):
         st.dataframe(
-            pd.DataFrame(data_dictionary()),
+            pd.DataFrame(
+                [
+                    (
+                        "Accuracy",
+                        "Small negative current readings on the ground are set to zero. Four "
+                        "start times with likely typing errors are corrected, and the original "
+                        "values are kept.",
+                    ),
+                    ("Completeness", _completeness(tables["flights"])),
+                    (
+                        "Consistency",
+                        "Route filtering and outlier flags follow written rules that are "
+                        "applied in the same way to every flight.",
+                    ),
+                    (
+                        "Credibility",
+                        "Flight phases are estimated by a rule, because the data has no phase "
+                        "labels. The checks below test that rule.",
+                    ),
+                    (
+                        "Traceability",
+                        "Corrected values keep their originals, and every rule is listed in the "
+                        "cleaning log.",
+                    ),
+                ],
+                columns=["Characteristic", "What we did"],
+            ),
             width="stretch",
             hide_index=True,
         )
+        for sentence in _phase_checks(tables):
+            st.markdown(f"- {sentence}")
+        st.markdown(
+            "- Flights on different days do not use significantly different amounts of energy "
+            "(Kruskal–Wallis test, p ≈ 0.09)."
+        )
+
+    with st.expander("Columns and units"):
+        st.dataframe(pd.DataFrame(data_dictionary()), width="stretch", hide_index=True)
+
+
+def _completeness(flights: pd.DataFrame) -> str:
+    """Gaps in the recordings of the flights on screen."""
+    with_gaps = int((flights["large_gap_count"] > 0).sum())
+    return (
+        "Readings arrive every 0.1 to 0.2 s. A gap longer than one second is counted for each "
+        f"flight; {with_gaps} of the {len(flights)} flights shown here have at least one."
+    )
+
+
+def _phase_checks(tables: dict[str, pd.DataFrame]) -> list[str]:
+    """Checks of the estimated phases, computed from the tables on screen."""
+    flights, energy = tables["flights"], tables.get("phase_energy")
+    if energy is None or energy.empty or flights.empty:
+        return []
+    totals = flights.set_index("flight")["energy_wh"]
+    gap = (energy.groupby("flight")["energy_wh"].sum() - totals).abs().max()
+    match = (
+        "to within a millionth of a watt-hour"
+        if gap < 1e-6
+        else f"with a largest difference of {gap:.3f} Wh"
+    )
+    sentences = [f"The energy of the estimated phases adds up to each flight's total {match}."]
+    design = flights.loc[flights["in_design"]]
+    if len(design):
+        two = int((design["wp_turn_count"] == 2).sum())
+        sentences.append(
+            f"{two} of the {len(design)} R1 experiment flights shown here have exactly the two "
+            "waypoint turns of the planned triangle."
+        )
+    return sentences
