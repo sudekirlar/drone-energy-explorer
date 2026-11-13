@@ -10,8 +10,6 @@ import pandas as pd
 
 from src.data.preprocess import (
     calculate_energy_wh,
-    calculate_ground_speed,
-    calculate_relative_altitude,
     clean_telemetry,
     summarize_time_gaps,
 )
@@ -64,13 +62,6 @@ def build() -> None:
 
         energy = np.zeros(len(group), dtype=float)
         energy[1:] = np.cumsum((power[1:] + power[:-1]) / 2 * np.diff(t) / 3600)
-
-        calculate_ground_speed(group["velocity_x"], group["velocity_y"]).to_numpy(dtype=float)
-
-        calculate_relative_altitude(group["position_z"]).to_numpy(dtype=float)
-
-        np.radians(lon - home_lon) * EARTH_RADIUS_M * np.cos(np.radians(home_lat))
-        np.radians(lat - home_lat) * EARTH_RADIUS_M
 
         distance = gps_distance_m(lat, lon)
         duration = float(t[-1] - t[0])
