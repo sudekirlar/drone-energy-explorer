@@ -38,8 +38,6 @@ MAP = CardInfo(
         "You can choose a route and two of its flights, change the colour measure, zoom, pan and "
         "hover over a dot to read its values. The buttons under the maps send the flights to the "
         "3D view or to the timeline.",
-        "The idea comes from Lecture 7 on trajectories. There, Minard's map of Napoleon's "
-        "campaign draws a path on a map and shows a quantity along it.",
         "The map uses every flight that passes the sidebar filters. Tick 'Include R2–R7' in the "
         "sidebar to see the routes other than R1.",
     ),
@@ -63,10 +61,8 @@ CUBE = CardInfo(
         "estimated phase, with the same colours as the map and the timeline.",
         "You can rotate the cube, switch the height between time and altitude, change the colour "
         "and choose up to four flights. Flights that you send from the map appear here.",
-        "The space–time cube comes from Lecture 7, which presents the idea of Hägerstrand and "
-        "Kraak. The lecture also warns about the costs of 3D, such as lines that hide each "
-        "other. For this reason the view shows at most four flights and starts from a fixed "
-        "angle.",
+        "In a 3D view, lines can hide each other and lengths can look shorter than they are. For "
+        "this reason the cube shows at most four flights and opens at a fixed angle.",
         "By default the cube shows flight 278 on route R7 and flights 8 and 77 on route R1, "
         "which fly at 4 m/s and 12 m/s.",
     ),
@@ -86,8 +82,8 @@ TIMELINE = CardInfo(
         "It also lets us check the estimated phases by eye. Each phase band should begin where "
         "the power, the speed or the altitude changes.",
         "Each measure has its own panel and its own unit, because two units on one chart with "
-        "two y-axes can mislead the reader. Time runs from left to right, as in the time series "
-        "of the lectures. The speed panel also shows the anemometer, which measures the drone's "
+        "two y-axes can mislead the reader. Time runs from left to right. "
+        "The speed panel also shows the anemometer, which measures the drone's "
         "airspeed and not the wind.",
         "You can choose a flight, zoom into one panel while the others follow, hover to read all "
         "four values at the same moment, and turn the phase bands on or off.",
