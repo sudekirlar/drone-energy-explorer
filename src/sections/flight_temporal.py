@@ -30,7 +30,7 @@ def render(tables: dict[str, pd.DataFrame]) -> None:
         return
 
     st.session_state.setdefault("map_flights", [])
-    st.session_state.setdefault("cube_flights", [])
+    st.session_state.setdefault("cube_flights", [278, 8, 77])  # default from interfaces.md
     st.session_state.setdefault("timeline_flight", 77)
     waypoints = tables.get("waypoints")
 
@@ -62,7 +62,7 @@ def render(tables: dict[str, pd.DataFrame]) -> None:
             st.session_state["map_flights"] = selected
             st.plotly_chart(
                 build_route_map(telemetry, waypoints, selected, color_by),
-                use_container_width=True,
+                width="stretch",
                 key="map_chart",
             )
             st.info(
@@ -87,18 +87,20 @@ def render(tables: dict[str, pd.DataFrame]) -> None:
     with st.container(border=True):
         st.markdown("#### G2 · How does the flight evolve through space and time?")
         st.caption(
-            "X/Y are metres east/north of the R1 reference point; Z is elapsed "
-            "recording time or relative altitude. Compare at most four flights."
+            "X/Y are metres east/north of the R1 reference point; Z is time since "
+            "take-off or relative altitude. Compare at most four flights."
         )
-        defaults = [v for v in st.session_state["cube_flights"] if v in all_ids][:4]
-        if not defaults:
-            defaults = [v for v in [278, 8, 77] if v in all_ids][:4]
-        if not defaults:
-            defaults = all_ids[:2]
+        # The widget keeps its value under its key; we only repair it before it is drawn
+        # (drop flights the filters removed, fall back to the guide's default). Passing a
+        # `default` as well would make Streamlit warn when "Send to 3D" sets the key.
+        current = st.session_state.get("cube_select_flights", st.session_state["cube_flights"])
+        current = [v for v in current if v in all_ids][:4]
+        if not current:
+            current = [v for v in [278, 8, 77] if v in all_ids][:4] or all_ids[:2]
+        st.session_state["cube_select_flights"] = current
         choices = st.multiselect(
             "Flights (max 4)",
             all_ids,
-            default=defaults,
             max_selections=4,
             key="cube_select_flights",
         )
@@ -110,12 +112,13 @@ def render(tables: dict[str, pd.DataFrame]) -> None:
         color = col2.selectbox(
             "Colour by",
             ["Flight", "Power (W)", "Relative altitude (m)", "Estimated phase"],
+            index=3,  # chart guide: phase by default, same colours as map and timeline
             key="cube_color_by",
         )
         if choices:
             st.plotly_chart(
                 build_space_time_cube(telemetry, choices, z_axis, color),
-                use_container_width=True,
+                width="stretch",
                 key="cube_plot",
             )
             st.info(
@@ -136,9 +139,9 @@ def render(tables: dict[str, pd.DataFrame]) -> None:
             "Four synchronized panels; the shaded bands are Platform-estimated "
             "phases when available, not ground-truth labels."
         )
-        preferred = st.session_state["timeline_flight"]
-        initial = all_ids.index(preferred) if preferred in all_ids else 0
-        flight = st.selectbox("Flight", all_ids, index=initial, key="timeline_select")
+        current = st.session_state.get("timeline_select", st.session_state["timeline_flight"])
+        st.session_state["timeline_select"] = current if current in all_ids else all_ids[0]
+        flight = st.selectbox("Flight", all_ids, key="timeline_select")
         st.session_state["timeline_flight"] = flight
         show = st.checkbox("Show estimated phase bands", value=True, key="timeline_show_phase")
         data_for_flight = telemetry.loc[telemetry["flight"] == flight]
@@ -146,7 +149,7 @@ def render(tables: dict[str, pd.DataFrame]) -> None:
             st.caption("Estimated phases are not available yet; telemetry is shown without bands.")
         st.plotly_chart(
             build_timeline(telemetry, flight, show),
-            use_container_width=True,
+            width="stretch",
             key="timeline_plot",
         )
         st.info(

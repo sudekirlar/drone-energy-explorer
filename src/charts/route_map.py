@@ -106,33 +106,53 @@ def build_route_map(
                 )
             )
 
+        # Plan markers (chart guide): a dark home marker and white-centred waypoint rings, so
+        # they stand apart from the flight track; they appear in the legend once.
+        first = i == 0
         start = group.iloc[0]
         fig.add_trace(
             go.Scattermap(
                 lat=[start["lat_deg"]],
                 lon=[start["lon_deg"]],
                 mode="markers+text",
-                marker={"size": 13, "color": color},
+                marker={"size": 16, "color": "#1d1c1a"},
                 text=["H"],
-                textposition="top center",
-                name=f"Home {flight_id}",
-                hovertemplate=f"Flight {flight_id} start<extra></extra>",
-                showlegend=False,
+                textposition="middle left",
+                textfont={"size": 13, "color": "#1d1c1a"},
+                name="Home (take-off)",
+                hovertemplate=f"Flight {flight_id} · home (take-off)<extra></extra>",
+                showlegend=first,
+                legendgroup="home",
             )
         )
         if waypoints is not None and not waypoints.empty:
             wp = waypoints.loc[(waypoints["flight"] == flight_id) & (waypoints["wp_index"] > 0)]
             if not wp.empty:
-                fig.add_trace(
+                labels_wp = [f"WP{v}" for v in wp["wp_index"]]
+                fig.add_trace(  # dark ring
+                    go.Scattermap(
+                        lat=wp["lat_deg"],
+                        lon=wp["lon_deg"],
+                        mode="markers",
+                        marker={"size": 18, "color": "#1d1c1a"},
+                        hoverinfo="skip",
+                        showlegend=False,
+                    )
+                )
+                fig.add_trace(  # white centre and label
                     go.Scattermap(
                         lat=wp["lat_deg"],
                         lon=wp["lon_deg"],
                         mode="markers+text",
-                        marker={"size": 12, "color": color},
-                        text=[f"WP{v}" for v in wp["wp_index"]],
+                        marker={"size": 11, "color": "#ffffff"},
+                        text=labels_wp,
                         textposition="top right",
-                        name=f"Waypoints {flight_id}",
-                        showlegend=False,
+                        textfont={"size": 12, "color": "#1d1c1a"},
+                        name="Waypoint (estimated turn)",
+                        hovertext=[f"Flight {flight_id} · {w}" for w in labels_wp],
+                        hovertemplate="%{hovertext}<extra></extra>",
+                        showlegend=first,
+                        legendgroup="waypoints",
                     )
                 )
 
@@ -144,7 +164,7 @@ def build_route_map(
                 "lat": float(data["lat_deg"].median()),
                 "lon": float(data["lon_deg"].median()),
             },
-            "zoom": 15,
+            "zoom": 16.6,  # the R1 triangle (~200 m) fills the frame
         },
         height=540,
         legend={"orientation": "h"},

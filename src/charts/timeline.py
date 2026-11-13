@@ -54,7 +54,7 @@ def build_timeline(
                 x0=left,
                 x1=right,
                 fillcolor=PALETTES["phase"][phase],
-                opacity=0.11,
+                opacity=0.22,  # 0.11 was hard to see on the dark theme
                 line_width=0,
                 layer="below",
             )

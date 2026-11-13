@@ -23,9 +23,20 @@ def build_space_time_cube(
     fig = go.Figure()
     flights = flight_ids[:4]
     data = telemetry.loc[telemetry["flight"].isin(flights)]
-    zcol = "t_s" if z_axis == "Time (s)" else "alt_rel_m"
+    # D2: time is counted from take-off, so every flight starts at the same height of the cube
+    # and the ground waiting before and after the flight is left out.
+    from_takeoff = "t_since_takeoff_s" in data.columns
+    time_col = "t_since_takeoff_s" if from_takeoff else "t_s"
+    zcol = time_col if z_axis == "Time (s)" else "alt_rel_m"
+    z_title = "Time since take-off (s)" if from_takeoff else "Time from recording start (s)"
     for i, flight in enumerate(flights):
         group = data.loc[data["flight"] == flight].sort_values("t_s")
+        if from_takeoff:
+            group = group.loc[group["t_since_takeoff_s"] >= 0]
+        if "phase" in group.columns:
+            airborne = group["phase"] != "Ground"
+            if airborne.any():  # sample tables label every row "Ground"; keep them visible
+                group = group.loc[airborne]
         if group.empty:
             continue
         name = f"Flight {flight}"
@@ -38,7 +49,7 @@ def build_space_time_cube(
                 mode="lines",
                 line={"color": base_color, "width": 5},
                 name=name,
-                customdata=group[["t_s", "power_w", "alt_rel_m"]].to_numpy(),
+                customdata=group[[time_col, "power_w", "alt_rel_m"]].to_numpy(),
                 hovertemplate="East=%{x:.1f} m<br>North=%{y:.1f} m<br>"
                 "Time=%{customdata[0]:.0f} s<br>Power=%{customdata[1]:.1f} W<br>"
                 "Alt=%{customdata[2]:.1f} m<extra>%{fullData.name}</extra>",
@@ -69,8 +80,11 @@ def build_space_time_cube(
         scene={
             "xaxis_title": "East (m)",
             "yaxis_title": "North (m)",
-            "zaxis_title": z_axis,
-            "camera": {"eye": {"x": 1.65, "y": 1.45, "z": 1.2}},
+            "zaxis_title": z_title if z_axis == "Time (s)" else z_axis,
+            # Same view as the chart guide: the triangle seen from the south-east, a tall z axis.
+            "camera": {"eye": {"x": 1.7, "y": -1.6, "z": 0.8}},
+            "aspectmode": "manual",
+            "aspectratio": {"x": 1, "y": 1.4, "z": 1.6 if z_axis == "Time (s)" else 0.9},
         },
         margin={"l": 0, "r": 0, "t": 55, "b": 0},
     )
