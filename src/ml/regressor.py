@@ -32,7 +32,7 @@ class RegressionArtifacts:
 
 
 def _prepare_r1_dataset(flights: pd.DataFrame) -> pd.DataFrame:
-    """Filter R1 design flights with finite target and feature values."""
+    """Filter design flights with finite target and feature values."""
     required = {"flight", TARGET_COL, *REGRESSOR_FEATURES}
     missing = required - set(flights.columns)
     if missing:
@@ -47,13 +47,16 @@ def _prepare_r1_dataset(flights: pd.DataFrame) -> pd.DataFrame:
     cols = list(REGRESSOR_FEATURES) + [TARGET_COL]
     df = df.dropna(subset=cols).reset_index(drop=True)
     if len(df) < N_SPLITS:
-        raise ValueError(f"At least {N_SPLITS} valid R1 flights are required, got {len(df)}.")
+        raise ValueError(f"At least {N_SPLITS} valid flights are required, got {len(df)}.")
     return df
 
 
 def _make_rf(seed: int) -> RandomForestRegressor:
+    # Each (payload, speed, altitude) setting has ~3 flights; min_samples_leaf=5
+    # prevents single-flight leaves from memorizing run-to-run noise.
     return RandomForestRegressor(
         n_estimators=200,
+        min_samples_leaf=5,
         random_state=seed,
         n_jobs=-1,
     )
@@ -64,26 +67,43 @@ def _evaluate_repeated_kfold(
     y: np.ndarray,
     seeds: tuple[int, ...],
     n_splits: int,
-) -> tuple[dict[str, float], dict[str, float], np.ndarray, np.ndarray]:
-    """Run n_splits K-Fold CV across multiple seeds for RF and Linear Regression."""
+) -> tuple[
+    dict[str, float],
+    dict[str, float],
+    np.ndarray,
+    np.ndarray,
+    list[dict[str, Any]],
+]:
+    """Run repeated K-Fold CV and compute held-out permutation importance across splits."""
     rf_r2, rf_mae = [], []
     lr_r2, lr_mae = [], []
 
     rf_oof_accum = np.zeros((len(seeds), len(y)), dtype=float)
     lr_oof_accum = np.zeros((len(seeds), len(y)), dtype=float)
+    fold_importances: list[np.ndarray] = []
 
     for s_idx, seed in enumerate(seeds):
         kf = KFold(n_splits=n_splits, shuffle=True, random_state=seed)
         rf_oof = np.empty(len(y), dtype=float)
         lr_oof = np.empty(len(y), dtype=float)
 
-        for train_idx, test_idx in kf.split(X):
+        for fold_idx, (train_idx, test_idx) in enumerate(kf.split(X)):
             X_tr, y_tr = X[train_idx], y[train_idx]
-            X_te = X[test_idx]
+            X_te, y_te = X[test_idx], y[test_idx]
 
             rf = _make_rf(seed)
             rf.fit(X_tr, y_tr)
             rf_oof[test_idx] = rf.predict(X_te)
+
+            perm = permutation_importance(
+                rf,
+                X_te,
+                y_te,
+                n_repeats=10,
+                random_state=seed * 100 + fold_idx,
+                scoring="r2",
+            )
+            fold_importances.append(perm.importances_mean)
 
             lr = LinearRegression()
             lr.fit(X_tr, y_tr)
@@ -97,6 +117,17 @@ def _evaluate_repeated_kfold(
         rf_oof_accum[s_idx] = rf_oof
         lr_oof_accum[s_idx] = lr_oof
 
+    imp_matrix = np.vstack(fold_importances)
+    perm_rows: list[dict[str, Any]] = [
+        {
+            "feature": feat,
+            "importance_mean": float(np.mean(imp_matrix[:, idx])),
+            "importance_std": float(np.std(imp_matrix[:, idx])),
+        }
+        for idx, feat in enumerate(REGRESSOR_FEATURES)
+    ]
+    perm_rows.sort(key=lambda r: r["importance_mean"], reverse=True)
+
     rf_stats = {
         "r2_mean": float(np.mean(rf_r2)),
         "r2_std": float(np.std(rf_r2)),
@@ -109,7 +140,7 @@ def _evaluate_repeated_kfold(
         "mae_mean": float(np.mean(lr_mae)),
         "mae_std": float(np.std(lr_mae)),
     }
-    return rf_stats, lr_stats, rf_oof_accum.mean(axis=0), lr_oof_accum.mean(axis=0)
+    return rf_stats, lr_stats, rf_oof_accum.mean(axis=0), lr_oof_accum.mean(axis=0), perm_rows
 
 
 def _evaluate_grouped_cv(
@@ -161,35 +192,6 @@ def _evaluate_grouped_cv(
     return rf_grouped, lr_grouped
 
 
-def _compute_permutation_importance(
-    X: np.ndarray,
-    y: np.ndarray,
-    seed: int = 42,
-) -> list[dict[str, Any]]:
-    """Compute permutation importance for Random Forest on the R1 dataset."""
-    rf = _make_rf(seed)
-    rf.fit(X, y)
-    perm = permutation_importance(
-        rf,
-        X,
-        y,
-        n_repeats=20,
-        random_state=seed,
-        scoring="r2",
-    )
-    rows = []
-    for idx, feat in enumerate(REGRESSOR_FEATURES):
-        rows.append(
-            {
-                "feature": feat,
-                "importance_mean": float(perm.importances_mean[idx]),
-                "importance_std": float(perm.importances_std[idx]),
-            }
-        )
-    rows.sort(key=lambda r: r["importance_mean"], reverse=True)
-    return rows
-
-
 def run_cruise_power_regression(
     flights: pd.DataFrame,
     seeds: tuple[int, ...] = DEFAULT_SEEDS,
@@ -200,9 +202,10 @@ def run_cruise_power_regression(
     X = df[list(REGRESSOR_FEATURES)].to_numpy(dtype=float)
     y = df[TARGET_COL].to_numpy(dtype=float)
 
-    rf_cv, lr_cv, rf_oof, lr_oof = _evaluate_repeated_kfold(X, y, seeds=seeds, n_splits=n_splits)
+    rf_cv, lr_cv, rf_oof, lr_oof, perm_imp = _evaluate_repeated_kfold(
+        X, y, seeds=seeds, n_splits=n_splits
+    )
     rf_grouped, lr_grouped = _evaluate_grouped_cv(df, X, y, seed=42)
-    perm_imp = _compute_permutation_importance(X, y, seed=42)
 
     pred_df = pd.DataFrame(
         {
@@ -245,21 +248,7 @@ def build_and_save_artifacts(
     out_path.mkdir(parents=True, exist_ok=True)
 
     expected_cols = [c.name for c in schema.ML_PAYLOAD.columns]
-    pred_to_save = artifacts.predictions.copy()
-    if set(expected_cols) != set(pred_to_save.columns):
-        rename_map = {}
-        for col in expected_cols:
-            if col in pred_to_save.columns:
-                continue
-            if "obs" in col:
-                rename_map["cruise_power_w"] = col
-            elif "rf" in col:
-                rename_map["rf_pred_w"] = col
-            elif "lin" in col:
-                rename_map["linear_pred_w"] = col
-        pred_to_save = pred_to_save.rename(columns=rename_map)[expected_cols]
-
-    validated_df = loader.validate(pred_to_save, schema.ML_PAYLOAD)
+    validated_df = loader.validate(artifacts.predictions[expected_cols], schema.ML_PAYLOAD)
     validated_df.to_parquet(out_path / "ml_payload.parquet", index=False)
 
     metrics_json = json.dumps(artifacts.metrics, indent=2)
