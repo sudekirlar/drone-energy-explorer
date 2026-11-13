@@ -1,113 +1,167 @@
-"""Overview & Data Quality (E1). Owner: Data."""
+"""Overview & Data Quality section (owner: Data, T4 scaffold by UI & ML)."""
 
 from __future__ import annotations
 
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import streamlit as st
 
 from src.data.schema import data_dictionary
+from src.sections.common import render_example_card
 from src.theme import PALETTES
 
 
-def render(tables: dict[str, pd.DataFrame]) -> None:
-    st.markdown("### Overview & Data Quality")
+def _build_energy_by_payload(tables: dict[str, pd.DataFrame]) -> tuple[go.Figure, str]:
     flights = tables["flights"]
+    plot_df = flights.copy()
+    plot_df["payload_label"] = plot_df["payload_g"].astype(str) + " g"
+    order = [f"{p} g" for p in sorted(flights["payload_g"].dropna().unique())]
+    color_map = {f"{k} g": v for k, v in PALETTES["payload"].items()}
+
+    fig = px.box(
+        plot_df,
+        x="payload_label",
+        y="energy_wh",
+        color="payload_label",
+        category_orders={"payload_label": order},
+        color_discrete_map=color_map,
+        labels={"payload_label": "Payload (g)", "energy_wh": "Total Energy (Wh)"},
+        title="Total flight energy (Wh) across payload groups",
+    )
+    fig.update_layout(showlegend=False)
+
+    medians = flights.groupby("payload_g")["energy_wh"].median().sort_index()
+    if len(medians) >= 2:
+        low_p, high_p = medians.index[0], medians.index[-1]
+        finding = (
+            f"Filtered median energy shifts from {medians.iloc[0]:.1f} Wh at {low_p} g "
+            f"to {medians.iloc[-1]:.1f} Wh at {high_p} g."
+        )
+    elif len(medians) == 1:
+        only_p = medians.index[0]
+        finding = f"Filtered median energy for {only_p} g payload is {medians.iloc[0]:.1f} Wh."
+    else:
+        finding = "No flights available in the current filter selection."
+
+    return fig, finding
+
+
+def _build_wh_per_km_by_speed(tables: dict[str, pd.DataFrame]) -> tuple[go.Figure, str]:
+    flights = tables["flights"]
+    plot_df = flights.copy()
+    plot_df["speed_label"] = plot_df["speed_mps"].astype(str) + " m/s"
+    order = [f"{s} m/s" for s in sorted(flights["speed_mps"].dropna().unique())]
+
+    fig = px.box(
+        plot_df,
+        x="speed_label",
+        y="wh_per_km",
+        color="speed_label",
+        category_orders={"speed_label": order},
+        color_discrete_sequence=PALETTES["viridis"],
+        labels={"speed_label": "Target Speed (m/s)", "wh_per_km": "Energy per km (Wh/km)"},
+        title="Energy per kilometre (Wh/km) across target speeds",
+    )
+    fig.update_layout(showlegend=False)
+
+    medians = flights.groupby("speed_mps")["wh_per_km"].median().sort_values()
+    if not medians.empty:
+        best_s = medians.index[0]
+        finding = (
+            f"Lowest median energy intensity in the current selection is {medians.iloc[0]:.1f} "
+            f"Wh/km at {best_s} m/s."
+        )
+    else:
+        finding = "No flights available in the current filter selection."
+
+    return fig, finding
+
+
+def render(tables: dict[str, pd.DataFrame]) -> None:
+    """Render Pelin's shared T4 card and KPIs, followed by Data's E1 evidence."""
+    flights = tables["flights"]
+    st.markdown("### Overview & Data Quality")
+
     if flights.empty:
         st.info("No flights match the current filter selection.")
         return
 
-    cols = st.columns(4)
-    cols[0].metric("Flights", f"{flights['flight'].nunique():,}")
-    cols[1].metric("Total flight duration", f"{flights['duration_s'].sum() / 3600:,.1f} h")
-    cols[2].metric("Total GPS distance", f"{flights['distance_m'].sum() / 1000:,.1f} km")
-    cols[3].metric("Median energy", f"{flights['energy_wh'].median():,.1f} Wh")
+    n_flights = int(flights["flight"].nunique())
+    mean_energy = float(flights["energy_wh"].mean()) if len(flights) else 0.0
+    mean_power = float(flights["mean_power_w"].mean()) if len(flights) else 0.0
+    outlier_count = int(flights["is_outlier"].sum()) if len(flights) else 0
 
-    st.markdown("#### Dataset context")
-    st.markdown(
-        "CMU drone flight telemetry, recorded with a DJI Matrice 100 in a controlled "
-        "experimental setting. The analyzed data covers routes R1–R7; ground and "
-        "stationary hover tests are excluded from flight comparisons. Power is "
-        "calculated from battery voltage and current; energy is integrated at the "
-        "original sampling rate before resampling to 1 Hz. Results should not be "
-        "generalized to different aircraft, batteries, terrain or weather conditions."
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Filtered Flights", f"{n_flights:,}")
+    col2.metric("Mean Energy (Wh)", f"{mean_energy:.1f}")
+    col3.metric("Mean Power (W)", f"{mean_power:.1f}")
+    col4.metric("Flagged Outliers", f"{outlier_count:,}")
+
+    render_example_card(
+        title="Energy consumption across experimental conditions",
+        how_to_read=(
+            "Each box shows the median, interquartile range, and spread across filtered flights."
+        ),
+        tables=tables,
+        options={
+            "Total Energy (Wh) by Payload": _build_energy_by_payload,
+            "Energy per km (Wh/km) by Speed": _build_wh_per_km_by_speed,
+        },
+        key_prefix="overview_example",
+        about_text=(
+            "CMU drone flight telemetry. These box plots compare the currently filtered "
+            "flights; they do not establish causation or generalize to other drones. "
+            "Data preparation and limitations are documented below."
+        ),
     )
 
-    with st.container(border=True):
-        st.markdown("#### Energy consumption across experiment settings")
-        metric = st.selectbox(
-            "Comparison",
-            ["Total energy by payload", "Energy per kilometre by target speed"],
-            key="overview_metric_select",
-        )
-        plot = flights.copy()
-        if metric == "Total energy by payload":
-            plot["payload"] = plot["payload_g"].astype(str) + " g"
-            fig = px.box(
-                plot,
-                x="payload",
-                y="energy_wh",
-                color="payload",
-                labels={"payload": "Payload", "energy_wh": "Energy (Wh)"},
-                title="How does total energy vary with payload?",
-                color_discrete_sequence=list(PALETTES["payload"].values()),
-            )
-            center = flights.groupby("payload_g")["energy_wh"].median()
-            caption = "Median energy by payload in the current selection: " + ", ".join(
-                f"{k} g = {v:.1f} Wh" for k, v in center.items()
-            )
-        else:
-            plot["speed"] = plot["speed_mps"].astype(str) + " m/s"
-            fig = px.box(
-                plot,
-                x="speed",
-                y="wh_per_km",
-                color="speed",
-                labels={"speed": "Target speed", "wh_per_km": "Energy intensity (Wh/km)"},
-                title="How does energy intensity vary with target speed?",
-                color_discrete_sequence=PALETTES["viridis"],
-            )
-            center = flights.groupby("speed_mps")["wh_per_km"].median()
-            caption = "Median energy intensity by speed in the current selection: " + ", ".join(
-                f"{k} m/s = {v:.1f} Wh/km" for k, v in center.items()
-            )
-        fig.update_layout(showlegend=False)
-        st.plotly_chart(fig, use_container_width=True, key="overview_comparison_chart")
-        st.info(f"**Finding:** {caption}")
+    st.markdown("#### Dataset context")
+    st.caption(
+        "CMU drone flight telemetry (DJI Matrice 100), routes R1–R7. "
+        "Ground and stationary hover tests are excluded from flight comparisons. "
+        "Battery power is voltage × current; energy is integrated at the original "
+        "sampling rate before 1 Hz resampling. Results should not be generalized "
+        "to other aircraft, batteries, locations or weather conditions."
+    )
 
     st.markdown("#### Data cleaning and provenance")
     quality = tables.get("quality_log")
     if quality is None or quality.empty:
-        st.warning("No quality log loaded. Cleaning-rule counts are not available.")
+        st.warning("Quality log is not available for the current data source.")
     else:
-        st.dataframe(
-            quality[["rule_id", "description", "rows_affected", "flights_affected", "iso25012"]],
-            use_container_width=True,
-            hide_index=True,
-        )
+        quality_columns = [
+            "rule_id",
+            "description",
+            "rows_affected",
+            "flights_affected",
+            "iso25012",
+        ]
+        st.dataframe(quality[quality_columns], width="stretch", hide_index=True)
         if (quality["rule_id"] == "joint-deviation-outliers").any():
             st.caption(
-                "Outlier count depends on the documented detection rule; flagged "
-                "flights are retained. The current implementation and the original "
-                "D4 prototype report differ, so do not treat the counts as interchangeable."
+                "Outlier counts depend on the documented detection rule. Flagged "
+                "flights are retained; the implementation and original D4 prototype "
+                "reported different counts, which should not be conflated."
             )
 
     st.markdown("#### ISO/IEC 25012 quality considerations")
-    iso = pd.DataFrame(
+    quality_notes = pd.DataFrame(
         [
-            ("Accuracy", "Negative current clipping; inferred clock corrections documented."),
+            ("Accuracy", "Negative current clipping and inferred clock fixes are documented."),
             ("Completeness", "Missing telemetry and time gaps require inspection."),
-            ("Consistency", "Route filtering and outlier flags follow named rules."),
-            (
-                "Credibility",
-                "Estimated flight phases are not independently annotated ground truth.",
-            ),
-            ("Traceability", "Original local time is retained alongside inferred correction."),
+            ("Consistency", "Route inclusion and outlier flags use explicit rules."),
+            ("Credibility", "Estimated flight phases are not independent ground truth."),
+            ("Traceability", "Original local times are kept alongside corrected times."),
         ],
         columns=["Characteristic", "Evidence / limitation"],
     )
-    st.dataframe(iso, hide_index=True, use_container_width=True)
-    st.caption("No day-to-day significance claim is made without a documented statistical test.")
+    st.dataframe(quality_notes, width="stretch", hide_index=True)
+    st.caption("Do not claim statistical significance without a documented test.")
 
     with st.expander("Data dictionary · columns, units and producers"):
-        st.dataframe(pd.DataFrame(data_dictionary()), hide_index=True, use_container_width=True)
+        st.dataframe(
+            pd.DataFrame(data_dictionary()),
+            width="stretch",
+            hide_index=True,
+        )
