@@ -71,6 +71,7 @@ def filter_flights(flights: pd.DataFrame, state: FilterState) -> pd.DataFrame:
         mask &= ~flights["is_outlier"].astype(bool)
 
     if not state.include_other_routes:
+        # Flight 76 (750 g) is also on R1; the payload filter decides whether it is shown.
         mask &= flights["route"] == "R1"
 
     return flights.loc[mask].reset_index(drop=True)
