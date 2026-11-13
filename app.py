@@ -90,11 +90,22 @@ if "flights" not in tables or tables["flights"].empty:
 # ==================================================
 
 flights_df = tables["flights"]
-base_state = FilterState.from_flights(flights_df)
 
 with st.sidebar:
     st.header("Global Filters")
     st.caption("Selected filters apply to all dashboard sections.")
+
+    # Asked first, because it decides which flights the other filters offer.
+    include_other_routes = st.checkbox(
+        "Include flights outside the experiment",
+        value=False,
+        help=(
+            "Off: the 181 R1 design flights (payload 0/250/500 g). "
+            "On: also R2–R7 and the 750 g flight 76."
+        ),
+    )
+    eligible = flights_df if include_other_routes else flights_df[flights_df["in_design"]]
+    base_state = FilterState.from_flights(eligible)
 
     payloads = st.multiselect(
         "Payload (g)",
@@ -116,11 +127,6 @@ with st.sidebar:
 
     hide_outliers = st.checkbox(
         "Hide outlier flights",
-        value=False,
-    )
-
-    include_other_routes = st.checkbox(
-        "Include R2–R7",
         value=False,
     )
 
@@ -153,20 +159,19 @@ sections = {
     "Multivariate & ML": multivariate_ml,
 }
 
+# The menu keeps its own value under the "menu_section" key (interfaces.md). Passing a
+# `default` that changes on every run would make Streamlit treat it as a new widget and drop
+# every second click; `required=True` stops a second click from deselecting the section.
 if "menu_section" not in st.session_state:
     st.session_state["menu_section"] = "Overview"
 
-selected_section = st.segmented_control(
+st.segmented_control(
     "Select a dashboard section",
     options=list(sections.keys()),
-    default=st.session_state["menu_section"],
-    selection_mode="single",
+    key="menu_section",
+    required=True,
 )
-
-if selected_section is None:
-    selected_section = "Overview"
-
-st.session_state["menu_section"] = selected_section
+selected_section = st.session_state["menu_section"]
 
 st.divider()
 

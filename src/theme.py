@@ -7,7 +7,10 @@ import plotly.io as pio
 
 from src.data import schema
 
+# Colours follow the team-approved chart guide ("On grafik, tek soru"), so the dashboard
+# matches the guide every chart was designed from.
 PALETTES = {
+    # Sequential, for quantities (power, energy, Wh/km).
     "viridis": [
         "#440154",
         "#414487",
@@ -16,38 +19,43 @@ PALETTES = {
         "#7ad151",
         "#fde725",
     ],
+    # Categorical, one colour per main phase; the same everywhere (map, cube, timeline, Sankey).
     "phase": {
-        "Ground": "#8c969e",
-        "Take-off": "#2a788e",
-        "Cruise": "#22a884",
-        "Manoeuvre": "#414487",
-        "Landing": "#d95f02",
+        "Ground": "#9a968c",
+        "Take-off": "#7a5195",
+        "Cruise": "#2a78d6",
+        "Manoeuvre": "#eda100",
+        "Landing": "#1baf7a",
     },
+    # Sub-phases use their main phase's colour; the second sub-phase of a pair is lighter.
     "sub_phase": {
-        "Ground": "#8c969e",
-        "Spool-up": "#56b4e9",
-        "Climb": "#2a788e",
-        "Straight leg": "#22a884",
-        "Sloped cruise": "#66c2a5",
-        "WP turn": "#414487",
-        "Speed change": "#7570b3",
-        "Descent": "#d95f02",
+        "Ground": "#9a968c",
+        "Spool-up": "#b39bc8",
+        "Climb": "#7a5195",
+        "Straight leg": "#2a78d6",
+        "Sloped cruise": "#8ab8ee",
+        "WP turn": "#eda100",
+        "Speed change": "#f5cd73",
+        "Descent": "#1baf7a",
     },
+    # Payload is ordinal: one hue, darker = heavier.
     "payload": {
-        0: "#bdd7e7",
-        250: "#6baed6",
-        500: "#3182bd",
-        750: "#08519c",
+        0: "#9ecae1",
+        250: "#3182bd",
+        500: "#08306b",
+        750: "#041a3d",
     },
+    # Categorical, for flights and K-means groups (no order implied).
     "categorical": [
-        "#2a788e",
-        "#22a884",
-        "#414487",
-        "#e66101",
-        "#7570b3",
-        "#66a61e",
-        "#a6761d",
+        "#2a78d6",
+        "#eb6834",
+        "#1baf7a",
+        "#eda100",
+        "#6250d6",
+        "#e87ba4",
+        "#8a877f",
     ],
+    # Diverging, for "observed minus predicted": blue below, grey at zero, red above.
     "diverging": [
         "#2166ac",
         "#67a9cf",

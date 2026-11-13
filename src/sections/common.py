@@ -16,7 +16,7 @@ def render_example_card(
     tables: dict[str, pd.DataFrame],
     options: dict[str, Callable[[dict[str, pd.DataFrame]], tuple[go.Figure, str]]],
     key_prefix: str,
-    about_text: str = "T4 skeleton example card · interaction: select · author: Pelin",
+    about_text: str | None = None,
 ) -> None:
     """Reusable chart card: title -> how to read -> control -> chart -> Finding -> expander."""
     with st.container(border=True):
@@ -30,5 +30,7 @@ def render_example_card(
         fig, finding_text = options[selected_view](tables)
         st.plotly_chart(fig, width="stretch", key=f"{key_prefix}_chart")
         st.info(f"Finding: {finding_text}")
-        with st.expander("About this chart"):
-            st.markdown(about_text)
+        # Only cards that say who made them and why get the expander; no default author.
+        if about_text:
+            with st.expander("About this chart"):
+                st.markdown(about_text)
