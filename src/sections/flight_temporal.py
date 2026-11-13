@@ -57,14 +57,16 @@ CUBE = CardInfo(
         "they climbed.",
         "With time as the height, a fast flight draws a short and flat line, and a slow flight "
         "draws a tall and steep one. With altitude as the height, you can see the vertical climb "
-        "at take-off and the stepped climb on route R7. By default the colour shows the "
-        "estimated phase, with the same colours as the map and the timeline.",
+        "at take-off. By default the colour shows the estimated phase, with the same colours as "
+        "the map and the timeline.",
         "You can rotate the cube, switch the height between time and altitude, change the colour "
         "and choose up to four flights. Flights that you send from the map appear here.",
         "In a 3D view, lines can hide each other and lengths can look shorter than they are. For "
         "this reason the cube shows at most four flights and opens at a fixed angle.",
-        "By default the cube shows flight 278 on route R7 and flights 8 and 77 on route R1, "
-        "which fly at 4 m/s and 12 m/s.",
+        "When the page opens, the cube shows flights 8 and 77 on route R1, which fly at 4 m/s "
+        "and 12 m/s. Flight 278 on route R7 climbs to about 95 m while it flies forward, which "
+        "shows well with altitude as the height. To see it, turn on the R2–R7 box in the sidebar "
+        "and choose the flight in the list above the cube.",
     ),
     author=AUTHOR,
 )
@@ -188,7 +190,9 @@ def _flight_label(flights: pd.DataFrame) -> Callable[[int], str]:
         if flight is None:
             return "None"
         row = info.loc[flight]
-        altitude = "stepped" if pd.isna(row["altitude_m"]) else f"{row['altitude_m']:.0f} m"
+        # R7 has no single planned altitude: flights 278 and 279 climb to over 90 m and back.
+        planned = row["altitude_m"]
+        altitude = "changing altitude" if pd.isna(planned) else f"{planned:.0f} m"
         return f"{flight} · {row['speed_mps']} m/s, {row['payload_g']} g, {altitude}"
 
     return label
