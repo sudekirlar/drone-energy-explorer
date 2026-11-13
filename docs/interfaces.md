@@ -123,25 +123,63 @@ only rely on receiving the filtered tables.
 
 ### Card pattern
 
-Every chart card is a fragment, so its own controls rerun only the card:
+Every chart is shown in the shared card from `src/sections/common.py`, so all cards look and
+read the same. A card has fixed parts, always in this order:
+
+| Part | What it says |
+|---|---|
+| Title | The chart's main message, as one sentence (Guideline #7). Not a question, no task codes (no "G1"). |
+| How to read | One sentence: what the marks, axes and colours mean. |
+| Data | One sentence: which flights the chart uses, and why. |
+| Controls | The card's own widgets. |
+| Chart | The Plotly figure, drawn with `card.plot`. |
+| Finding | What the real data shows, with numbers. Computed from the filtered data when the claim depends on the filters. |
+| About this chart (folded) | Why this chart · What you see (encodings) · What you can do (Yi et al. interaction types) · From the lectures · Made by (full name). |
+
+The texts live in one `CardInfo` per chart, next to the card function:
 
 ```python
+from src.sections.common import CardInfo, chart_card
+
+SANKEY = CardInfo(
+    title="At 100 m, take-off and landing use half of the energy.",
+    how_to_read="Bands flow from flight groups to phases; a wider band means more energy (Wh).",
+    data="The 181 R1 design flights; the route grouping adds R2-R7.",
+    finding="...",
+    why="Energy is a budget: the phases of a flight add up to its total, as in a Sankey.",
+    encoding="Band width shows energy. Colour shows the phase, as in every other chart.",
+    interaction="Change the grouping (reconfigure) and switch to percentages (encode).",
+    lecture="Lecture 6 (trees and flows): flow diagrams show how a total divides.",
+    author="Sude Kırlar",
+)
+
+
 @st.fragment
 def sankey_card(tables: dict[str, pd.DataFrame]) -> None:
-    st.subheader("At 100 m, take-off and landing use half of the energy")  # message title
-    st.caption("How to read: band width = energy (Wh) ...")
-    group_by = st.selectbox(
-        "Group by", ["altitude", "speed", "payload", "route"], key="sankey_group_by"
-    )
-    fig = build_sankey(tables["phase_energy"], tables["flights"], group_by)
-    st.plotly_chart(fig, key="sankey_chart")
-    st.info("Finding: ...")
-    with st.expander("About this chart"):
-        st.markdown("Lecture 6 + flows · interaction: reconfigure, select · author: Sude")
+    with chart_card(SANKEY) as card:
+        group_by = st.selectbox(
+            "Group by", ["altitude", "speed", "payload", "route"], key="sankey_group_by"
+        )
+        card.plot(
+            build_sankey(tables["phase_energy"], tables["flights"], group_by), key="sankey_chart"
+        )
+        card.finding = "..."  # optional: replaces SANKEY.finding with numbers from the data
 ```
 
-Card anatomy: message title → one-line how to read → controls → chart → Finding box → expander
-(lecture reference, interaction type, author).
+Each card function is an `@st.fragment`, so its own controls rerun only that card.
+
+### Writing on screen
+
+Everything a visitor reads is in simple English, in short, full sentences.
+
+- One idea per sentence. Present tense: "Power rises", not "Power will rise".
+- Say what the visitor sees, not how we built it. No internal words: "Platform", "contract",
+  "schema", task codes. Say "estimated phase", never just "phase label".
+- Give units in brackets the first time: "power (W)", "speed (m/s)".
+- Numbers in findings come from the real data. A number that depends on the filters is computed;
+  a fixed number is checked against the processed tables in the Saturday consistency pass (Q1).
+- Write "waypoint" in full in sentences; "WP1" is fine as a label on the chart.
+- Name people, not roles: "Made by İlayda Demir", not "Author: Data role".
 
 **Widget keys** are unique and start with the chart scope (`sankey_`, `stc_`, `pcp_`, ...).
 
