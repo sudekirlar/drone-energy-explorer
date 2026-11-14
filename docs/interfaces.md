@@ -37,11 +37,21 @@ the file exists, so cards can show a placeholder). Numbers are never typed into 
   "target": "cruise_power_w",
   "features": ["payload_g", "speed_mps", "altitude_m"],
   "n_flights": 181,
-  "cv": {"folds": 5, "seeds": 5},
-  "random_forest": {"r2_mean": 0.81, "r2_std": 0.01, "mae_mean_w": 14.0, "mae_std_w": 0.5},
-  "linear":        {"r2_mean": 0.78, "r2_std": 0.01, "mae_mean_w": 15.0, "mae_std_w": 0.5},
-  "grouped_cv":    {"random_forest_r2": 0.79, "linear_r2": 0.76},
-  "permutation_importance": {"payload_g": 1.6, "speed_mps": 0.14, "altitude_m": 0.07}
+  "cv_folds": 5,
+  "cv_seeds": [0, 1, 2, 3, 4],
+  "random_forest": {
+    "cv": {"r2_mean": 0.788, "r2_std": 0.008, "mae_mean": 14.91, "mae_std": 0.33},
+    "grouped_cv": {"r2": 0.760, "mae": 15.42, "n_groups": 60}
+  },
+  "linear_regression": {
+    "cv": {"r2_mean": 0.772, "r2_std": 0.001, "mae_mean": 15.42, "mae_std": 0.03},
+    "grouped_cv": {"r2": 0.746, "mae": 16.08, "n_groups": 60}
+  },
+  "permutation_importance": [
+    {"feature": "payload_g", "importance_mean": 1.587, "importance_std": 0.129},
+    {"feature": "speed_mps", "importance_mean": 0.058, "importance_std": 0.036},
+    {"feature": "altitude_m", "importance_mean": 0.014, "importance_std": 0.014}
+  ]
 }
 ```
 

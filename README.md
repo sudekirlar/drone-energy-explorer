@@ -55,13 +55,13 @@ docs/               decisions, model card, user test
 
 TODO: finish the complete ten-chart table with all three contributors.
 
-### Flight & Temporal Analysis â€” Ä°layda Demir
+### Flight & Temporal Analysis — İlayda Demir
 
 | Chart | Question | Interaction |
 |---|---|---|
-| G1 â€” Flight routes | Where did the drone fly, and how did power, speed, altitude or estimated phase change along its route? | Choose a route and up to two flights, compare matched colour scales, zoom and inspect positions. |
-| G2 â€” Spaceâ€“time cube | How do position, elapsed time and altitude relate? | Rotate the 3D scene, compare up to four flights and change the vertical axis or colour measure. |
-| G3 â€” Inside one flight | How do power, speed, altitude and battery voltage vary throughout a flight? | Choose a flight, use linked time panels, hover and toggle estimated phase bands. |
+| G1 — Flight routes | Where did the drone fly, and how did power, speed, altitude or estimated phase change along its route? | Choose a route and up to two flights, compare matched colour scales, zoom and inspect positions. |
+| G2 — Space–time cube | How do position, elapsed time and altitude relate? | Rotate the 3D scene, compare up to four flights and change the vertical axis or colour measure. |
+| G3 — Inside one flight | How do power, speed, altitude and battery voltage vary throughout a flight? | Choose a flight, use linked time panels, hover and toggle estimated phase bands. |
 
 The route map sends selected flights to the 3D cube or to the timeline.
 Phase and waypoint labels are algorithmic estimates rather than hand-annotated ground truth.
@@ -69,7 +69,7 @@ Phase and waypoint labels are algorithmic estimates rather than hand-annotated g
 ## Data cleaning
 
 The CMU data set contains 209 recordings. This dashboard analyzes the 196 flights on
-routes R1â€“R7, excluding ground-only and stationary hover tests.
+routes R1–R7, excluding ground-only and stationary hover tests.
 
 - **Power:** battery voltage multiplied by current; negative current values are clipped to zero.
 - **Energy:** trapezoidal integration of power at the original sampling rate, before telemetry is resampled to 1 Hz.
@@ -91,11 +91,11 @@ TODO: K-means clustering and Random Forest regression, evaluation and limitation
 
 TODO: complete the contributions of the other team members.
 
-### Ä°layda Demir â€” Data & Flight Analysis
+### İlayda Demir — Data & Flight Analysis
 
 - Prepared flight telemetry, flight-level summaries, original-rate energy integration and quality logs.
 - Prepared contract-compatible sample tables, automated data tests and [DATASHEET.md](DATASHEET.md).
-- Built G1 (route maps), G2 (3D spaceâ€“time cube) and G3 (synchronized telemetry timeline).
+- Built G1 (route maps), G2 (3D space–time cube) and G3 (synchronized telemetry timeline).
 - Connected flight selections between the map, 3D view and timeline.
 - Implemented the Overview data-quality content and contributed validation checks.
 
