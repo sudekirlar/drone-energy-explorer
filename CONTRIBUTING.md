@@ -1,58 +1,56 @@
-# Contributing
+# How we worked
 
-How the three of us work on this repo. Short rules, applied every time, so the history reads as one
-team's work and every member's contribution is visible.
+This file describes how our team of three worked on the repository: who owned which part, how we
+named branches and commits, and how every change was reviewed before it reached `main`. We
+followed the same rules for every change, so the history reads as one team's work and each
+member's contribution is visible.
 
-| Role | Member | Owns | Section (3 charts) |
+| Role | Member | Owns | Section (charts) |
 |---|---|---|---|
 | Platform | Sude | repo and standards, data contract (`schema.py`, `loader.py`), flight phases, deployment, merge order | Energy & Experimental Conditions: Sankey, treemap, payload × speed heatmap + RF view |
 | Data | İlayda | sample tables, cleaning and flight summaries (`preprocess.py`), data tests, Overview & Data Quality | Flight & Temporal Analysis: route map, 3D Space-Time Cube, phase-annotated timeline (+ links between them) |
-| UI & ML | Pelin | app frame (`app.py`, menu, sidebar filters), `theme.py`, K-means, Random Forest regression, Model Card | Multivariate Analysis & ML: parallel coordinates, SPLOM, violin + box, flight × time heatmap |
+| UI & ML | Pelin | app frame (`app.py`, menu, sidebar filters), `theme.py`, K-means, Random Forest regression, Model Card | Comparison & Clusters: parallel coordinates, SPLOM, violin + box, flight × time heatmap |
 
-Ten charts in total; the full list, sub-questions and decisions are in the chart guide and in
-`docs/decisions.md`.
+The ten charts and the questions they answer are listed in the [README](README.md). The reasons
+behind our main choices are in [docs/decisions.md](docs/decisions.md).
 
 ---
 
-## 1. One-time setup (each member)
+## 1. Setup
+
+Every member set up the project in the same way, with the same Python version:
 
 ```bash
-# 1. Commits must use the SAME e-mail as your GitHub account,
-#    otherwise they are not linked to your profile and you are invisible in Insights → Contributors.
+# Commits use the same e-mail as the GitHub account, so GitHub links them to the right person.
 git config --global user.name  "Your Name"
 git config --global user.email "the-email-on-your-github-account"
 
-# 2. Clone and use the shared commit template
-git clone <repo-url>
-cd <repo>
+# Clone the repository and use the shared commit template.
+git clone https://github.com/sudekirlar/drone-energy-explorer.git
+cd drone-energy-explorer
 git config commit.template .gitmessage
 
-# 3. Python 3.13 environment (everyone on the same version)
+# Python 3.13 environment
 python -m venv .venv
 .venv\Scripts\activate              # macOS/Linux: source .venv/bin/activate
 pip install -r requirements-dev.txt
-pre-commit install                  # ruff + safety checks run on every commit
+pre-commit install                  # runs ruff and safety checks on every commit
 
-# 4. Check
-pytest                              # should pass
-streamlit run app.py                # opens the app in the browser
+# Check
+pytest
+streamlit run app.py
 ```
 
-PyCharm: *Settings → Project → Python Interpreter → Add Interpreter → Local → Virtualenv*, location
-`<repo>/.venv`, base Python 3.13. The PyCharm terminal then activates `.venv` by itself.
-
-Check step 1 with `git log -1 --format='%an <%ae>'` after your first commit.
-
-Raw data goes into `data/raw/` (see the README there). It is ignored by git.
+The raw data goes into `data/raw/` (see the README in that folder). Git ignores it.
 
 ---
 
 ## 2. Branches
 
-`main` is protected: no direct pushes, every change arrives through a pull request with one approval
-and a green CI check.
+`main` is protected. Nobody pushes to it directly: every change arrives through a pull request
+with one approval and a passing CI check.
 
-Branch name: `<type>/<issue-number>-<short-slug>`
+A branch is named `<type>/<issue-number>-<short-slug>`:
 
 ```
 feat/13-route-map
@@ -62,24 +60,26 @@ fix/22-flight-heatmap-sort-order
 docs/32-readme
 ```
 
-Keep a branch to one issue. Small PRs get reviewed fast; a 1,000-line PR on Saturday night will not.
+A branch serves one issue. Small pull requests are easier to review well.
 
 ---
 
 ## 3. Commit messages
 
-Format ([Conventional Commits](https://www.conventionalcommits.org)), written in **English**:
+Commit messages follow [Conventional Commits](https://www.conventionalcommits.org) and are
+written in English:
 
 ```
 <type>(<scope>): <subject>
 
-<body: why this change, what it does — optional, wrap at 72>
+<body: why this change, what it does (optional, wrapped at 72 characters)>
 
 Refs #<issue>
 Co-authored-by: Name <github-email>
 ```
 
-**Subject:** imperative mood ("add", not "added"), lowercase, no full stop, ≤ 72 characters.
+The subject is in the imperative mood ("add", not "added"), in lowercase, without a full stop,
+and at most 72 characters long.
 
 ### Types
 | Type | Use for |
@@ -89,10 +89,10 @@ Co-authored-by: Name <github-email>
 | `data` | preprocessing rules, cleaning, derived variables, processed files |
 | `ml` | model training, evaluation, metrics |
 | `style` | visual consistency: titles, palette, labels, layout (no logic change) |
-| `refactor` | code restructuring without behaviour change |
+| `refactor` | code restructuring without a change in behaviour |
 | `docs` | README, report, decisions, comments, this file |
 | `test` | tests |
-| `chore` | setup, dependencies, config, CI |
+| `chore` | setup, dependencies, configuration, CI |
 
 ### Scopes
 | Area | Scopes |
@@ -102,7 +102,7 @@ Co-authored-by: Name <github-email>
 | UI & ML | `app`, `theme`, `filters`, `kmeans`, `regressor` |
 | Flight & Temporal charts | `route-map`, `stc`, `timeline`, `links` |
 | Energy & Experimental Conditions charts | `sankey`, `treemap`, `payload-heatmap` |
-| Multivariate & ML charts | `pcp`, `splom`, `violin`, `flight-heatmap` |
+| Comparison & Clusters charts | `pcp`, `splom`, `violin`, `flight-heatmap` |
 
 ### Examples
 ```
@@ -118,129 +118,112 @@ docs(readme): add contributions table and dataset citation
 ```
 
 ### Pair work
-If two of you wrote it together, the committer adds:
+When two members wrote a change together, the commit names both of them with a trailer:
 ```
 Co-authored-by: Teammate Name <teammate-github-email>
 ```
-GitHub then credits both people on that commit.
+GitHub then credits both people for that commit.
 
-### Don't
-- `update`, `fix stuff`, `final`, `final2`, `asdf`
-- one commit containing three unrelated changes
-- committing anything from `data/raw/` (ignored; the pre-commit hook also blocks files > 20 MB)
+### What we avoided
+- We did not use vague messages such as "update", "fix stuff" or "final".
+- We did not put unrelated changes into one commit.
+- We did not commit anything from `data/raw/`. Git ignores the folder, and a pre-commit hook also
+  blocks any file larger than 20 MB.
 
 ---
 
-## 4. Daily workflow
+## 4. From task to merge
 
-Every planned task already has an issue, assigned to its owner and placed on the project board
-(Day and Estimate filled in). **Do not open a new issue for a planned task.** Open one only for
-something the plan does not cover: a bug, a question that blocks you, or an idea (label `later`).
+Every planned task had an issue on the project board, with an owner, a day and an estimate. We
+opened new issues only for work the plan did not cover, such as a bug or a question that blocked
+someone.
 
-1. On the board, filter by your name, pick the task for today and move its card to **In Progress**.
-2. Create a branch named after the issue (below). The issue page's *Development → Create a branch*
-   button does the same.
-3. Commit in small steps with `Refs #<issue>` in the footer.
-4. Push, open a PR (`Refs #n` or `Closes #n`, see section 5), request the reviewer and move the
-   card to **In Review**.
-5. After approval, merge with "Create a merge commit". `Closes #n` closes the issue and the card
-   moves to **Done** by itself.
+1. The owner moves the task's card to **In Progress**.
+2. The owner creates a branch named after the issue.
+3. The owner commits in small steps, with `Refs #<issue>` in each commit message.
+4. The owner pushes the branch, opens a pull request, requests a reviewer and moves the card to
+   **In Review**.
+5. After approval, the pull request is merged with "Create a merge commit". `Closes #n` closes
+   the issue, and the card moves to **Done**.
 
 ```bash
-git switch main && git pull                 # start from the latest main
+git switch main
+git pull                                    # start from the latest main
 git switch -c feat/13-route-map             # one branch per issue
 # ... work, commit in small steps ...
-git pull origin main                        # bring in teammates' merged work, fix conflicts locally
+git pull origin main                        # bring in teammates' merged work
 git push -u origin feat/13-route-map
-# open a PR on GitHub
-```
-
-Daily status message (same time every day, team chat):
-```
-Yesterday: #16 Sankey three levels done (PR open)
-Today: percent mode + finding text
-Blocked: phase_energy has no "sloped cruise" rows, asked Sude
+# open a pull request on GitHub
 ```
 
 ---
 
 ## 5. Pull requests
 
-- **Title** uses the same format as a commit subject: `feat(route-map): add power-coloured route map`.
-- **Description** follows the PR template and links the task issue:
-  - `Refs #13` when the PR is one step of the task (the issue stays open),
-  - `Closes #13` in the PR that finishes the task (the issue closes on merge and its card moves
-    to Done).
-- **Reviewer:** CODEOWNERS requests the file owner automatically. For section PRs we rotate:
-  - Sude's PRs → İlayda
-  - İlayda's PRs → Pelin
-  - Pelin's PRs → Sude
-  - If the assigned reviewer is busy for more than 6 hours, anyone may review.
-- **Merge method: "Create a merge commit".** Squash and rebase are disabled, so every commit keeps
-  its author.
-- The branch is deleted automatically after merging.
-- Merge order is Platform's call when several PRs touch shared files.
+- The **title** has the same format as a commit subject: `feat(route-map): add power-coloured
+  route map`.
+- The **description** follows the pull request template and links the task's issue. It says
+  `Refs #13` when the pull request is one step of the task, and `Closes #13` when it finishes the
+  task.
+- **Reviewer:** GitHub requests the owner of each changed file automatically (`CODEOWNERS`). For
+  section pull requests we rotated: Sude's were reviewed by İlayda, İlayda's by Pelin, and Pelin's
+  by Sude. When the assigned reviewer was busy for more than six hours, anyone could review.
+- **Merge method:** "Create a merge commit". Squash and rebase merges are turned off, so every
+  commit keeps its author.
+- GitHub deletes a branch automatically after it is merged.
+- When several pull requests changed shared files, Platform decided the order of merging.
 
 ### Reviewing
-Reviews are part of your visible contribution. Leave at least one concrete comment, positive or
-critical. Check:
-1. The app runs locally on your machine.
-2. The PR template checklist.
-3. CI is green.
+A review is part of a member's visible contribution, so every review leaves at least one concrete
+comment. The reviewer checks three things:
+1. The app runs on the reviewer's own computer.
+2. Every item of the pull request checklist is met.
+3. CI passes.
 
-Use **Request changes** when something on the checklist fails, **Approve** when it passes.
+The reviewer chooses **Request changes** when an item fails, and **Approve** when all pass.
 
 ---
 
 ## 6. Code rules
 
-- **Layers.** `src/charts/<chart>.py` exposes `build_<chart>(df, ...) -> go.Figure`. `src/data` and
-  `src/ml` are plain Python. None of these three import Streamlit (`tests/test_architecture.py`
-  enforces it). UI code (widgets, `st.plotly_chart`, text, `@st.cache_data`, `@st.fragment`) lives in
-  `app.py` and `src/sections/<section>.py`.
-- **Sections, not tabs.** The top menu renders only the selected section; `st.tabs` would run all of
-  them on every rerun. Every chart card is an `@st.fragment`.
-- **Widget keys:** every widget gets a unique `key` prefixed with its chart scope:
+- **Layers.** `src/charts/<chart>.py` exposes `build_<chart>(df, ...) -> go.Figure`. `src/data`
+  and `src/ml` are plain Python. None of these three folders imports Streamlit, and
+  `tests/test_architecture.py` checks this. UI code (widgets, `st.plotly_chart`, text,
+  `@st.cache_data`, `@st.fragment`) lives in `app.py` and `src/sections/<section>.py`.
+- **Sections, not tabs.** The top menu runs only the selected section, while `st.tabs` would run
+  every section on every rerun. Every chart card is an `@st.fragment`.
+- **Widget keys.** Every widget has a unique `key` that starts with its chart's scope, for example
   `key="sankey_group_by"`. Two widgets with the same label and no key crash the app.
-- **Colours** only from `src/theme.py`. No hard-coded hex values in chart files.
-- **Data** is read through `src/data/loader.py`. Column names, types and units follow
-  `src/data/schema.py`: lowercase, unit at the end (`power_w`, `energy_wh`, `alt_rel_m`). Never
-  read files inside a chart. How charts, sections and shared state plug together:
-  `docs/interfaces.md`.
-- **Contract changes** go through a PR labelled `contract`, approved by Platform and the role that
-  produces the table; bump `SCHEMA_VERSION`.
-- **Ownership.** Change someone else's file only through an issue or after asking them.
-- **Notebooks** (`notebooks/`) are for exploration. Anything the app needs must live in `src/`.
-- **Decisions** that affect the team get three lines in `docs/decisions.md`: decision, alternative, why.
+- **Data.** Tables are read through `src/data/loader.py`. Column names, types and units follow
+  `src/data/schema.py`: lowercase, with the unit at the end (`power_w`, `energy_wh`,
+  `alt_rel_m`). Chart code never reads files. [docs/interfaces.md](docs/interfaces.md) describes
+  how charts, sections and shared state fit together.
+- **pandas 3.** Copy-on-write is always on, so we never use chained assignment
+  (`df[a][b] = x`); we use `df.loc` instead.
+- **Contract changes** go through a pull request labelled `contract`. Platform and the role that
+  produces the table both approve it, and `SCHEMA_VERSION` goes up.
+- **Ownership.** A member changes someone else's file only through an issue or after asking the
+  owner.
+- **Decisions** that affect the team get a short entry in [docs/decisions.md](docs/decisions.md):
+  the decision, the alternative and the reason.
 
----
+### Chart rules
+- Colours come only from `src/theme.py`. There are no hard-coded colour values in chart files.
+- We use no rainbow (jet) scales, no pie charts and no charts with two y-axes. The Space-Time Cube
+  is the only 3D chart.
+- Every chart has axis titles with units, a legend when it shows more than one series, and hover
+  texts with units.
+- A card's title names the chart, and the finding below it carries the message
+  ([D18](docs/decisions.md)).
+- The `wind_speed` column is the drone's airspeed from its anemometer, not the wind. It is labelled
+  "airspeed (anemometer)" and kept out of the multivariate charts and the models
+  ([D3](docs/decisions.md)).
 
-## 7. For AI assistants
-
-Paste this block into your AI chat so generated code and commits follow the same rules:
-
-```text
-Project rules (CEN445 Streamlit dashboard; Python 3.13, streamlit 1.67, plotly 7.1, pandas 3.1,
-scikit-learn 1.9):
-- Layers: src/charts/<chart>.py exposes build_<chart>(df, ...) -> plotly Figure. src/data, src/ml and
-  src/charts must NOT import streamlit. UI code (widgets, st.cache_data, st.fragment) lives in app.py
-  and src/sections/<section>.py, each with render(...). app.py only wires the menu and sidebar filters.
-- Sections are switched with st.segmented_control, not st.tabs. Each chart card is an @st.fragment.
-- Data comes from src/data/loader.py. Column names, types and units follow src/data/schema.py:
-  lowercase with the unit at the end (power_w, energy_wh, wh_per_km, alt_rel_m, speed_mps).
-  Never read files inside chart code. Interfaces (chart signature, section render(tables),
-  shared session_state keys, ml_metrics.json): docs/interfaces.md.
-- Colours only from src/theme.py. No rainbow/jet, no pie charts, no dual y-axes, no 3D except the
-  Space-Time Cube.
-- Every figure: message-style title, axis titles with units, legend when >1 series, hover with units.
-- Every Streamlit widget gets a unique key prefixed with the chart scope, e.g. key="pcp_k".
-- pandas 3: copy-on-write is always on; never use chained assignment (df[a][b] = x), use df.loc.
-- Commit messages: Conventional Commits in English, "<type>(<scope>): <imperative subject>" (≤72).
-  Types: feat, fix, data, ml, style, refactor, docs, test, chore. Footer "Refs #<issue>".
-- ML: one row per flight; never split telemetry rows randomly between train and test.
-  K-means on five outcome measures; Random Forest REGRESSION of cruise power from payload, speed,
-  altitude, compared with linear regression. Flight phases are estimated (rule-based), never an
-  ML target.
-- The 'wind_speed' column is airspeed from the anemometer, not wind: label it "airspeed
-  (anemometer)" and keep it out of multivariate charts and models.
-```
+### Machine-learning rules
+- A model uses one row per flight. Telemetry rows are never split at random between training and
+  testing, because rows of the same flight are almost copies of each other.
+- K-means groups flights by their outcome measures. The Random Forest is a regression of cruise
+  power on payload, speed and altitude, and it is compared with a linear regression
+  ([D5](docs/decisions.md)).
+- Flight phases are estimated with a rule ([D6](docs/decisions.md)). They are never the target of
+  a model.

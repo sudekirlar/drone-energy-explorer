@@ -67,8 +67,8 @@ Newest at the bottom. Reference an entry in PRs and the report as `D<n>`.
   treemap family, parallel coordinates. Candidates: Space-Time Cube, SPLOM, flight × time heatmap.
   Basic: timeline, payload × speed heatmap, violin.
 - **Why:** six advanced charts are required; two of the three candidates are enough, so one
-  rejection still leaves the requirement met. Space-Time Cube and SPLOM are asked to the
-  instructor early (task K1). Connected scatterplot and ternary plot were dropped from earlier
+  rejection still leaves the requirement met. We asked the instructor about the Space-Time Cube
+  and the SPLOM early. Connected scatterplot and ternary plot were dropped from earlier
   drafts.
 
 ## D8 · Roles
@@ -110,8 +110,7 @@ Newest at the bottom. Reference an entry in PRs and the report as `D<n>`.
   (`battery_voltage`, `wind_speed`, ...) are translated only in `preprocess.py`.
 - **Alternative:** units in their SI spelling (`power_W`, `energy_Wh`), as in the first plan.
 - **Why:** the preprocessing code and its tests already used lowercase names; lowercase is the
-  Python convention and what code assistants produce by default; mixing `W` and `w` is an easy
-  mistake to miss. One translation point keeps raw names out of every chart.
+  Python convention; mixing `W` and `w` is an easy mistake to miss. One translation point keeps raw names out of every chart.
 
 ## D13 · Loader without Streamlit, caching in the UI layer
 - **Decision:** `src/data/loader.py` reads and validates tables with plain pandas; `@st.cache_data`
@@ -143,7 +142,7 @@ Newest at the bottom. Reference an entry in PRs and the report as `D<n>`.
 ## D15 · One pipeline writes data/processed, and its files are committed
 - **Decision:** `src/data/pipeline.py` runs cleaning (Data, writes `data/intermediate/`), phases
   (Platform) and the contract check, and is the only code that writes the contract tables to
-  `data/processed/`. The processed tables (about 4 MB) are committed to git. The T5 sample
+  `data/processed/`. The processed tables (about 4 MB) are committed to git. The sample
   tables stay in `data/sample/` as a fallback.
 - **Alternative:** each producer writes its part of `flights` and `telemetry_1hz` to
   `data/processed/` in turn.
@@ -160,7 +159,7 @@ Newest at the bottom. Reference an entry in PRs and the report as `D<n>`.
 - **Treemap (chart 5):** size is the number of flights and is nearly equal by design; colour
   (median Wh/km) carries the result. The level order is a menu because the hierarchy is ours.
   Icicle and sunburst open two levels deep, because 60 leaves were unreadable as thin rows.
-- **Payload x speed heatmap (chart 6):** the card's own altitude menu from the chart guide was
+- **Payload x speed heatmap (chart 6):** the card's own altitude menu from our first plan was
   dropped, because the sidebar already filters altitude and two filters could contradict each
   other. The two power views share one colour scale and the two difference views share another,
   so switching views compares like with like. The finding leads with the shape across speed;
@@ -182,3 +181,13 @@ Newest at the bottom. Reference an entry in PRs and the report as `D<n>`.
 - **Why:** without the step, a rebuilt `flights` table would sit next to predictions made from
   the old one. Five seeds only make the published scores steadier; the behaviour the tests
   check is the same with one seed, and the test suite went from about 70 s to about 10 s.
+
+## D18 · Card titles name the chart; the finding carries the message
+- **Decision:** a card's title says what the chart shows, in a few words ("Energy budget").
+  The message is the finding box below the chart, which is computed from the flights on screen.
+- **Considered instead:** a message as the title ("Take-off and landing use half of the
+  energy at 100 m"), as in a printed report.
+- **Why:** Guideline #7 asks for a title that fits the message or the data. On a dashboard the
+  filters change the data, so a fixed message title can become wrong, while a computed finding
+  always describes what is on screen. The finding sits right under the chart, where a reader
+  looks next.

@@ -16,7 +16,7 @@ Closes #
 - [ ] Column names and units match `src/data/schema.py`
 
 ### For a chart (delete if not a chart)
-- [ ] Title states the message, not just the variables (Guideline #7)
+- [ ] Short title that names the chart; the message is in the computed finding (D18)
 - [ ] Axis titles with units; legend when there is more than one series
 - [ ] One-line "how to read" and a Finding box
 - [ ] At least one meaningful interaction (Yi et al. type: …)
