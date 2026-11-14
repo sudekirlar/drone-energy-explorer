@@ -88,7 +88,9 @@ def test_build_and_save_artifacts_writes_parquet_and_json(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, evaluated: RegressionArtifacts
 ) -> None:
     # This test checks the files, not the model, so it reuses the shared evaluation.
-    monkeypatch.setattr(regressor, "run_cruise_power_regression", lambda flights: evaluated)
+    monkeypatch.setattr(
+        regressor, "run_cruise_power_regression", lambda flights, **kwargs: evaluated
+    )
     flights = _make_r1_flights()
     res = build_and_save_artifacts(flights=flights, output_dir=tmp_path)
 
