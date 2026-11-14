@@ -177,9 +177,12 @@ def build_flight_time_heatmap(
         fig.update_layout(title="No telemetry samples available for selected flights")
         return fig
 
-    tel = tel.copy()
-    t_shifted = tel[time_col] - tel.groupby("flight")[time_col].transform("min")
-    tel["time_bin"] = (np.floor(t_shifted / SLICE_SECONDS) * SLICE_SECONDS).astype(int)
+    tel = tel.loc[tel[time_col] >= 0].copy()
+    if tel.empty:
+        fig = go.Figure()
+        fig.update_layout(title="No post-takeoff telemetry samples available for selected flights")
+        return fig
+    tel["time_bin"] = (np.floor(tel[time_col] / SLICE_SECONDS) * SLICE_SECONDS).astype(int)
 
     time_bins = sorted(tel["time_bin"].unique().tolist())
     bin_to_col = {b: idx for idx, b in enumerate(time_bins)}
@@ -236,6 +239,8 @@ def build_flight_time_heatmap(
             zmax=len(PHASE_ORDER) - 0.5,
             colorbar={
                 "title": "Phase",
+                "x": 1.18,
+                "xanchor": "left",
                 "tickmode": "array",
                 "tickvals": list(range(len(PHASE_ORDER))),
                 "ticktext": list(PHASE_ORDER),
@@ -252,6 +257,8 @@ def build_flight_time_heatmap(
             colorscale=PALETTES["viridis"],
             colorbar={
                 "title": "Power (W)",
+                "x": 1.18,
+                "xanchor": "left",
                 "len": 0.65,
             },
         )
@@ -294,7 +301,7 @@ def build_flight_time_heatmap(
                     "y1": start_idx - 0.5,
                     "xref": "paper",
                     "yref": "y",
-                    "line": {"color": "#111111", "width": 1.6},
+                    "line": {"color": "rgba(128, 128, 128, 0.8)", "width": 1.6},
                 }
             )
         start_idx = end_idx + 1
