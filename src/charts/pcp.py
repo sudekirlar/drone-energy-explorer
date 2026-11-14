@@ -9,16 +9,16 @@ import plotly.graph_objects as go
 
 from src.theme import PALETTES
 
-PCP_AXES: tuple[tuple[str, str], ...] = (
-    ("payload_g", "Payload (g)"),
-    ("speed_mps", "Speed (m/s)"),
-    ("altitude_m", "Altitude (m)"),
-    ("duration_s", "Duration (s)"),
-    ("energy_wh", "Energy (Wh)"),
-    ("wh_per_km", "Wh per km (Wh/km)"),
-    ("cruise_power_w", "Cruise power (W)"),
-    ("climb_power_w", "Climb power (W)"),
-    ("voltage_drop_v", "Voltage drop (V)"),
+PCP_AXES: tuple[tuple[str, str, str], ...] = (
+    ("payload_g", "Payload (g)", ".0f"),
+    ("speed_mps", "Speed (m/s)", ".0f"),
+    ("altitude_m", "Altitude (m)", ".0f"),
+    ("duration_s", "Duration (s)", ".0f"),
+    ("energy_wh", "Energy (Wh)", ".1f"),
+    ("wh_per_km", "Wh per km (Wh/km)", ".1f"),
+    ("cruise_power_w", "Cruise power (W)", ".0f"),
+    ("climb_power_w", "Climb power (W)", ".0f"),
+    ("voltage_drop_v", "Voltage drop (V)", ".2f"),
 )
 
 
@@ -36,7 +36,7 @@ def _prepare_pcp_frame(flights: pd.DataFrame, labels: pd.Series | Sequence[str])
                 "both 'start_voltage_v' and 'end_voltage_v'."
             )
 
-    required_cols = [col for col, _ in PCP_AXES]
+    required_cols = [col for col, _, _ in PCP_AXES]
     missing = [col for col in required_cols if col not in df.columns]
     if missing:
         raise KeyError(f"flights is missing required PCP columns: {missing}")
@@ -87,9 +87,24 @@ def build_pcp(
     cluster_codes = df["cluster"].astype(str).str.extract(r"(\d+)", expand=False).astype(int)
     k = max(int(cluster_codes.max()), 1)
 
-    dimensions: list[dict[str, object]] = [
-        {"label": label, "values": df[col].to_numpy(dtype=float)} for col, label in PCP_AXES
-    ]
+    dimensions: list[dict[str, object]] = []
+    for col, label, fmt in PCP_AXES:
+        vals = df[col].to_numpy(dtype=float)
+        lo, hi = float(vals.min()), float(vals.max())
+        if lo == hi:
+            tick_vals = [lo]
+        else:
+            step = (hi - lo) / 3.0
+            tick_vals = [lo + i * step for i in range(4)]
+        dimensions.append(
+            {
+                "label": label,
+                "values": vals,
+                "range": [lo, hi],
+                "tickvals": tick_vals,
+                "tickformat": fmt,
+            }
+        )
 
     tick_vals = list(range(1, k + 1))
     dimensions.append(

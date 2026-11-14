@@ -106,5 +106,9 @@ def render_multivariate_ml(flights: pd.DataFrame) -> None:
 
 def render(tables: dict[str, pd.DataFrame], filters: Any = None) -> None:
     """Entry point called by app.py section router."""
+    st.markdown("### Multivariate Analysis & ML")
+    st.caption(
+        "How flight variables cluster together and how phase power varies across operating conditions."
+    )
     flights = tables.get("flights", pd.DataFrame())
     render_multivariate_ml(flights)
