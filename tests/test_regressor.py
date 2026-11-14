@@ -1,4 +1,10 @@
-"""Unit tests for src/ml/regressor.py (Task C3)."""
+"""Unit tests for src/ml/regressor.py (Task C3).
+
+The model is evaluated once, with one seed instead of five, and the result is shared by the
+tests. Five seeds only make the published scores steadier; the behaviour these tests check
+(shapes, thresholds, importance order, files written) is the same with one seed, and the suite
+runs in seconds instead of more than a minute.
+"""
 
 from __future__ import annotations
 
@@ -8,8 +14,10 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from src.ml import regressor
 from src.ml.regressor import (
     REGRESSOR_FEATURES,
+    RegressionArtifacts,
     build_and_save_artifacts,
     run_cruise_power_regression,
 )
@@ -54,9 +62,14 @@ def _make_r1_flights(n: int = 54, seed: int = 42) -> pd.DataFrame:
     return pd.concat([df, extra], ignore_index=True)
 
 
-def test_run_cruise_power_regression_metrics_and_oof() -> None:
-    flights = _make_r1_flights()
-    res = run_cruise_power_regression(flights)
+@pytest.fixture(scope="module")
+def evaluated() -> RegressionArtifacts:
+    """One evaluation of the synthetic flights, shared by the tests below."""
+    return run_cruise_power_regression(_make_r1_flights(), seeds=(0,))
+
+
+def test_run_cruise_power_regression_metrics_and_oof(evaluated: RegressionArtifacts) -> None:
+    res = evaluated
 
     assert len(res.predictions) == 54
     assert res.metrics["n_flights"] == 54
@@ -71,7 +84,11 @@ def test_run_cruise_power_regression_metrics_and_oof() -> None:
     assert imp_features[0] == "speed_mps"
 
 
-def test_build_and_save_artifacts_writes_parquet_and_json(tmp_path: Path) -> None:
+def test_build_and_save_artifacts_writes_parquet_and_json(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, evaluated: RegressionArtifacts
+) -> None:
+    # This test checks the files, not the model, so it reuses the shared evaluation.
+    monkeypatch.setattr(regressor, "run_cruise_power_regression", lambda flights: evaluated)
     flights = _make_r1_flights()
     res = build_and_save_artifacts(flights=flights, output_dir=tmp_path)
 
