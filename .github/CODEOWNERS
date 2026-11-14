@@ -1,46 +1,64 @@
 # Who is asked for review automatically when a file changes.
-# Replace the three handles with real GitHub usernames before the first PR.
-#   PLATFORM_GH = Sude (Platform)   DATA_GH = İlayda (Data)   UIML_GH = Pelin (UI & ML)
+#   @sudekirlar         = Sude Kırlar (Platform)
+#   @ilayda-demir       = İlayda Demir (Data)
+#   @Pelingulkizilkilic = Pelin Gül Kızılkılıç (UI & ML)
 # Later lines win over earlier ones.
 
-*                           @sudekirlar
+*                                 @sudekirlar
 
-# Platform: contract, loading, phases, tooling
-/src/data/schema.py         @sudekirlar
-/src/data/loader.py         @sudekirlar
-/src/data/phases.py         @sudekirlar
-/.github/                   @sudekirlar
-/requirements*.txt          @sudekirlar
+# Platform: contract, loading, phases, pipeline, shared card, tooling
+/src/data/schema.py               @sudekirlar
+/src/data/loader.py               @sudekirlar
+/src/data/phases.py               @sudekirlar
+/src/data/pipeline.py             @sudekirlar
+/src/sections/common.py           @sudekirlar
+/.github/                         @sudekirlar
+/requirements*.txt                @sudekirlar
 
-# Data: cleaning, tests, data quality
-/src/data/preprocess.py     @ilayda-demir
-/tests/test_data.py         @ilayda-demir
-/data/                      @ilayda-demir
-/src/sections/overview.py   @ilayda-demir
+# Data: cleaning, sample export, tests, data quality
+/src/data/preprocess.py           @ilayda-demir
+/src/data/build_processed.py      @ilayda-demir
+/src/data/build_samples.py        @ilayda-demir
+/tests/test_data.py               @ilayda-demir
+/tests/test_raw_telemetry.py      @ilayda-demir
+/tests/test_t5_sample_export.py   @ilayda-demir
+/data/                            @ilayda-demir
+/data/raw/README.md               @sudekirlar
+/DATASHEET.md                     @ilayda-demir
+/src/sections/overview.py         @ilayda-demir
 
 # UI & ML: frame, theme, filters, models
-/app.py                     @Pelingulkizilkilic
-/src/theme.py               @Pelingulkizilkilic
-/src/data/filters.py        @Pelingulkizilkilic
-/src/ml/                    @Pelingulkizilkilic
+/app.py                           @Pelingulkizilkilic
+/src/theme.py                     @Pelingulkizilkilic
+/src/data/filters.py              @Pelingulkizilkilic
+/src/ml/                          @Pelingulkizilkilic
+/tests/test_clustering.py         @Pelingulkizilkilic
+/tests/test_regressor.py          @Pelingulkizilkilic
 
 # Section owners (charts + section file)
 /src/sections/flight_temporal.py  @ilayda-demir
 /src/charts/route_map.py          @ilayda-demir
 /src/charts/space_time_cube.py    @ilayda-demir
 /src/charts/timeline.py           @ilayda-demir
+/tests/test_flight_charts.py      @ilayda-demir
 
 /src/sections/energy.py           @sudekirlar
 /src/charts/sankey.py             @sudekirlar
 /src/charts/treemap.py            @sudekirlar
 /src/charts/payload_heatmap.py    @sudekirlar
+/tests/test_energy_charts.py      @sudekirlar
 
 /src/sections/multivariate_ml.py  @Pelingulkizilkilic
 /src/charts/pcp.py                @Pelingulkizilkilic
 /src/charts/splom.py              @Pelingulkizilkilic
 /src/charts/violin.py             @Pelingulkizilkilic
 /src/charts/flight_heatmap.py     @Pelingulkizilkilic
+/tests/test_pcp.py                @Pelingulkizilkilic
+/tests/test_splom.py              @Pelingulkizilkilic
+/tests/test_violin.py             @Pelingulkizilkilic
+/tests/test_flight_heatmap.py     @Pelingulkizilkilic
 
 # Shared documents
-/README.md                  @sudekirlar @ilayda-demir @Pelingulkizilkilic
-/docs/                      @sudekirlar @ilayda-demir @Pelingulkizilkilic
+/README.md                        @sudekirlar @ilayda-demir @Pelingulkizilkilic
+/docs/                            @sudekirlar @ilayda-demir @Pelingulkizilkilic
+/docs/MODEL_CARD.md               @Pelingulkizilkilic
