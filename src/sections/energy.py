@@ -11,6 +11,7 @@ import pandas as pd
 import streamlit as st
 
 from src.charts.sankey import build_sankey, describe_sankey
+from src.charts.treemap import build_treemap, describe_treemap
 from src.sections.common import CardInfo, chart_card
 
 AUTHOR = "Sude Kırlar"
@@ -47,7 +48,47 @@ SANKEY = CardInfo(
     author=AUTHOR,
 )
 
+TREE = CardInfo(
+    title="Cost of each setting",
+    how_to_read=(
+        "Each box is a group of R1 flights, split by payload, altitude and speed. A darker box "
+        "uses less energy per kilometre, and a yellow box uses more. Click a box to zoom in, and "
+        "click the top bar (or the centre of the sunburst) to zoom out."
+    ),
+    about=(
+        "The R1 experiment flew every combination of 3 payloads, 4 altitudes and 5 speeds, which "
+        "makes 60 settings. Arranged as a tree, these settings become the leaves of three levels. "
+        "The chart answers two questions: which setting is the cheapest per kilometre, and how "
+        "does the order change as you go down the tree?",
+        "The size of a box shows how many flights it holds. The experiment flew almost every "
+        "setting three times, so the boxes are almost equal. This is honest, but it also means "
+        "that the colour carries the result. The colour is the median energy per kilometre "
+        "(Wh/km) of the flights in the box, on one sequential scale (Viridis). The median is "
+        "used because a single unusual flight cannot move it much.",
+        "This is not a natural hierarchy. Payload is not the parent of altitude; we chose the "
+        "order of the levels. That is why you can change it, and each order puts a different "
+        "setting at the top.",
+        "You can switch between three drawings of the same tree. A treemap uses the whole area "
+        "and leaves room for colour, but boxes of different shapes are hard to compare by size. "
+        "An icicle shows the depth of the tree clearly. A sunburst gives the outer levels more "
+        "room, but angles are harder to read than lengths. The icicle and the sunburst open "
+        "with two levels, because 60 settings would be too thin to read; click a box to see "
+        "the level below it. Hover over a box to read its median "
+        "and its number of flights.",
+        "The chart uses only the R1 flights of the experiment, because only there are the three "
+        "settings balanced. One setting (0 g, 25 m and 4 m/s) has a single R1 flight, and two "
+        "settings have two, so their colours rest on fewer flights.",
+    ),
+    author=AUTHOR,
+)
+
 GROUP_OPTIONS = {"Altitude": "altitude", "Speed": "speed", "Payload": "payload", "Route": "route"}
+LAYOUT_OPTIONS = {"Treemap": "treemap", "Icicle": "icicle", "Sunburst": "sunburst"}
+ORDER_OPTIONS = {
+    "Payload → altitude → speed": ("payload", "altitude", "speed"),
+    "Altitude → speed → payload": ("altitude", "speed", "payload"),
+    "Speed → altitude → payload": ("speed", "altitude", "payload"),
+}
 
 
 # Sankey node labels take the page's own text colour. Streamlit's chart theme gives Plotly text
@@ -75,6 +116,7 @@ def render(tables: dict[str, pd.DataFrame]) -> None:
         return
 
     sankey_card(flights, phase_energy)
+    tree_card(flights)
 
 
 @st.fragment
@@ -91,3 +133,17 @@ def sankey_card(flights: pd.DataFrame, phase_energy: pd.DataFrame) -> None:
         # grouping gets its own chart element and is drawn from scratch.
         card.plot(build_sankey(phase_energy, flights, group_by), key=f"sankey_chart_{group_by}")
         card.finding = describe_sankey(phase_energy, flights, group_by)
+
+
+@st.fragment
+def tree_card(flights: pd.DataFrame) -> None:
+    with chart_card(TREE) as card:
+        col1, col2, _ = st.columns([1, 1, 1])
+        layout = LAYOUT_OPTIONS[col1.selectbox("Drawing", list(LAYOUT_OPTIONS), key="tree_layout")]
+        order_label = col2.selectbox("Order of levels", list(ORDER_OPTIONS), key="tree_order")
+        order = ORDER_OPTIONS[order_label]
+        # A new order builds a different tree; a fresh element also resets any zoom.
+        card.plot(
+            build_treemap(flights, order, layout), key=f"tree_chart_{layout}_{'_'.join(order)}"
+        )
+        card.finding = describe_treemap(flights, order)

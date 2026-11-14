@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.charts import sankey
+from src.charts import sankey, treemap
 from src.data import schema
 
 # Energy (Wh) of one flight in each sub-phase, in schema.SUB_PHASES order.
@@ -115,3 +115,82 @@ def test_one_group_and_no_flights() -> None:
     empty = fl.iloc[0:0]
     assert sankey.describe_sankey(pe, empty, "altitude") is None
     assert len(sankey.build_sankey(pe, empty, "altitude").data) == 0
+
+
+# ---- G5 treemap ----------------------------------------------------------------------------
+
+ORDER = ("payload", "altitude", "speed")
+
+
+def _grid() -> pd.DataFrame:
+    """A full 3 x 4 x 5 design grid with one flight per setting, plus one R7 flight.
+
+    Wh/km grows with payload and altitude and falls with speed, so the cheapest setting is
+    0 g, 25 m, 12 m/s and the most expensive is 500 g, 100 m, 4 m/s.
+    """
+    rows, flight = [], 1
+    for p in (0, 250, 500):
+        for a in (25.0, 50.0, 75.0, 100.0):
+            for s in (4, 6, 8, 10, 12):
+                whkm = 30 + p / 50 + a / 5 - s
+                rows.append((flight, p, a, s, True, whkm))
+                flight += 1
+    rows.append((278, 0, np.nan, 10, False, 20.0))
+    return pd.DataFrame(
+        rows, columns=["flight", "payload_g", "altitude_m", "speed_mps", "in_design", "wh_per_km"]
+    )
+
+
+def test_tree_has_root_three_levels_and_sixty_settings() -> None:
+    nodes = treemap.tree_nodes(_grid(), ORDER)
+    assert nodes["depth"].value_counts().sort_index().tolist() == [1, 3, 12, 60]
+    assert nodes["id"].is_unique
+    assert nodes.at[0, "flights"] == 60  # the R7 flight is not part of the grid
+
+
+def test_every_box_holds_the_flights_of_its_children() -> None:
+    nodes = treemap.tree_nodes(_grid(), ORDER).set_index("id")
+    children = nodes.reset_index().groupby("parent")["flights"].sum()
+    for parent, total in children.items():
+        if parent:
+            assert nodes.at[parent, "flights"] == total
+
+
+def test_order_decides_the_top_level() -> None:
+    nodes = treemap.tree_nodes(_grid(), ("speed", "altitude", "payload"))
+    assert nodes.loc[nodes["depth"] == 1, "label"].tolist() == [
+        "4 m/s",
+        "6 m/s",
+        "8 m/s",
+        "10 m/s",
+        "12 m/s",
+    ]
+
+
+def test_every_layout_draws() -> None:
+    for layout in treemap.LAYOUTS:
+        fig = treemap.build_treemap(_grid(), ORDER, layout)
+        assert fig.data[0].type == layout
+        assert len(fig.data[0].ids) == 76
+
+
+def test_tree_finding_names_cheapest_and_dearest_setting() -> None:
+    text = treemap.describe_treemap(_grid(), ORDER)
+    assert text.startswith(
+        "The cheapest setting on screen is 0 g, 25 m and 12 m/s (23.0 Wh/km, a single flight)"
+    )
+    assert (
+        "the most expensive is 500 g, 100 m and 4 m/s (56.0 Wh/km, a single flight), "
+        "2.4 times as much" in text
+    )
+    assert "At the top level (payload), the median goes from" in text
+    # The setting is always written as payload, altitude, speed, whatever the level order.
+    assert "0 g, 25 m and 12 m/s" in treemap.describe_treemap(
+        _grid(), ("speed", "altitude", "payload")
+    )
+
+
+def test_tree_with_no_design_flights() -> None:
+    only_r7 = _grid().loc[lambda d: ~d["in_design"]]
+    assert treemap.describe_treemap(only_r7, ORDER) is None
+    assert len(treemap.build_treemap(only_r7, ORDER).data) == 0
