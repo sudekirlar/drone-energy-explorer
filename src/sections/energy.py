@@ -10,8 +10,16 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
+from src.charts.payload_heatmap import (
+    build_importance,
+    build_payload_heatmap,
+    build_prediction_scatter,
+    describe_payload_heatmap,
+    model_scores,
+)
 from src.charts.sankey import build_sankey, describe_sankey
 from src.charts.treemap import build_treemap, describe_treemap
+from src.data import loader
 from src.sections.common import CardInfo, chart_card
 
 AUTHOR = "Sude Kırlar"
@@ -82,6 +90,52 @@ TREE = CardInfo(
     author=AUTHOR,
 )
 
+HEATMAP = CardInfo(
+    title="Payload, speed and cruise power",
+    how_to_read=(
+        "Each cell holds the R1 flights with one payload and one target speed. Its colour and "
+        "number show their mean cruise power (W), or, in the two difference views, how far a "
+        "model's prediction is from the measurement."
+    ),
+    about=(
+        "This chart answers the main question of the dashboard most directly: how do payload "
+        "and speed change the power a drone needs? It uses cruise power, the mean power on the "
+        "straight legs, because it does not depend on how long the take-off and the landing "
+        "take. Altitude barely changes cruise power; its cost is in climbing and descending, "
+        "which the energy budget above shows. Use the sidebar to look at one altitude.",
+        "The same grid also shows a machine-learning model. A Random Forest is a set of many "
+        "decision trees. Each tree asks yes-or-no questions such as 'is the payload above "
+        "375 g?' and ends with a power value, and the forest averages the answers of all its "
+        "trees. It predicts a flight's cruise power from its payload, speed and altitude. Every "
+        "prediction on this chart comes from a model that never saw that flight (5-fold "
+        "cross-validation, repeated with 5 different splits).",
+        "We compare the forest with a straight-line (linear) model. The forest is only worth "
+        "using where the straight line fails. The two difference views share one colour scale, "
+        "so you can compare them directly: blue means the model predicted too much, red means "
+        "it predicted too little, and grey means it was right. The gain over the linear model "
+        "is small, and the scores above show by how much.",
+        "The bar chart shows how much the forest relies on each feature: we shuffle one "
+        "feature and measure how much worse the predictions get. The drop can be larger than 1, "
+        "because a model that has lost its main input predicts worse than simply guessing the "
+        "average, and its R² becomes negative.",
+        "The scores and the feature importance were computed once for all R1 flights, so they "
+        "do not change with the filters. The cells and the scatter plot follow the filters. "
+        "The model leaves out the anemometer reading, because it measures the drone's own "
+        "airspeed and would only repeat the speed. Some scatter remains that no model can "
+        "explain, because flights with the same setting still differ by about 15 W (weather, "
+        "battery and measurement noise).",
+        "Only the R1 flights of the experiment are used, because the model was trained on them.",
+    ),
+    author=AUTHOR,
+)
+
+HEATMAP_VIEWS = {
+    "Measured cruise power": "observed",
+    "Random Forest prediction": "rf",
+    "Difference: measured − Random Forest": "rf_gap",
+    "Difference: measured − linear model": "lin_gap",
+}
+
 GROUP_OPTIONS = {"Altitude": "altitude", "Speed": "speed", "Payload": "payload", "Route": "route"}
 LAYOUT_OPTIONS = {"Treemap": "treemap", "Icicle": "icicle", "Sunburst": "sunburst"}
 ORDER_OPTIONS = {
@@ -117,6 +171,9 @@ def render(tables: dict[str, pd.DataFrame]) -> None:
 
     sankey_card(flights, phase_energy)
     tree_card(flights)
+    ml_payload = tables.get("ml_payload")
+    if ml_payload is not None:
+        heatmap_card(flights, ml_payload)
 
 
 @st.fragment
@@ -147,3 +204,50 @@ def tree_card(flights: pd.DataFrame) -> None:
             build_treemap(flights, order, layout), key=f"tree_chart_{layout}_{'_'.join(order)}"
         )
         card.finding = describe_treemap(flights, order)
+
+
+@st.cache_data(show_spinner=False)
+def _ml_metrics() -> dict:
+    return loader.load_ml_metrics()
+
+
+@st.fragment
+def heatmap_card(flights: pd.DataFrame, ml_payload: pd.DataFrame) -> None:
+    with chart_card(HEATMAP) as card:
+        metrics = _ml_metrics()
+        scores = model_scores(metrics)
+        if scores:
+            c1, c2, c3 = st.columns(3)
+            c1.metric(
+                "Random Forest R²",
+                scores["rf"],
+                help=f"Share of the flight-to-flight differences the model explains (1 = all). "
+                f"Mean error {scores['rf_mae']}.",
+            )
+            c2.metric(
+                "Linear model R²",
+                scores["lin"],
+                help=f"The same score for a straight-line model. Mean error {scores['lin_mae']}.",
+            )
+            c3.metric(
+                "R² on unseen settings",
+                scores["unseen"],
+                help="Random Forest / linear model, when every flight of a setting is left out "
+                "together, so the model has never seen that payload, speed and altitude.",
+            )
+            st.caption("These scores are for all R1 flights and do not follow the filters.")
+        else:
+            st.caption("Model scores are not available yet.")
+
+        col, _ = st.columns([1, 1])
+        label = col.selectbox("Show", list(HEATMAP_VIEWS), key="heatmap_view")
+        view = HEATMAP_VIEWS[label]
+        card.plot(build_payload_heatmap(flights, ml_payload, view), key="heatmap_chart")
+
+        left, right = st.columns(2)
+        with left:
+            model = "linear" if view == "lin_gap" else "rf"
+            card.plot(build_prediction_scatter(flights, ml_payload, model), key="heatmap_scatter")
+        with right:
+            card.plot(build_importance(metrics), key="heatmap_importance")
+        card.finding = describe_payload_heatmap(flights, ml_payload, view)

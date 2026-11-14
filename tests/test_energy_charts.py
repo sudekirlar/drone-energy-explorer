@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.charts import sankey, treemap
+from src.charts import payload_heatmap, sankey, treemap
 from src.data import schema
 
 # Energy (Wh) of one flight in each sub-phase, in schema.SUB_PHASES order.
@@ -194,3 +194,101 @@ def test_tree_with_no_design_flights() -> None:
     only_r7 = _grid().loc[lambda d: ~d["in_design"]]
     assert treemap.describe_treemap(only_r7, ORDER) is None
     assert len(treemap.build_treemap(only_r7, ORDER).data) == 0
+
+
+# ---- G6 payload x speed heatmap + Random Forest -----------------------------------------------
+
+METRICS = {
+    "random_forest": {
+        "cv": {"r2_mean": 0.788, "r2_std": 0.008, "mae_mean": 14.9, "mae_std": 0.3},
+        "grouped_cv": {"r2": 0.760, "mae": 15.4, "n_groups": 60},
+    },
+    "linear_regression": {
+        "cv": {"r2_mean": 0.772, "r2_std": 0.0015, "mae_mean": 15.4, "mae_std": 0.03},
+        "grouped_cv": {"r2": 0.746, "mae": 16.1, "n_groups": 60},
+    },
+    "permutation_importance": [
+        {"feature": "payload_g", "importance_mean": 1.59, "importance_std": 0.13},
+        {"feature": "speed_mps", "importance_mean": 0.06, "importance_std": 0.04},
+        {"feature": "altitude_m", "importance_mean": 0.01, "importance_std": 0.01},
+    ],
+}
+
+
+def _model_tables() -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Two flights per (payload, speed) cell for 0/500 g and 4/12 m/s, plus one R7 flight.
+
+    Measured power = 450 + payload/5 (+20 W at 12 m/s). The forest is 2 W off everywhere; the
+    linear model misses the 12 m/s jump by 10 W.
+    """
+    rows, ml, flight = [], [], 1
+    for p in (0, 500):
+        for s in (4, 12):
+            for _ in range(2):
+                measured = 450 + p / 5 + (20 if s == 12 else 0)
+                rows.append((flight, p, s, True))
+                linear = measured - (10 if s == 12 else -5)
+                ml.append((flight, measured, measured - 2, linear))
+                flight += 1
+    rows.append((278, 0, 10, False))
+    flights = pd.DataFrame(rows, columns=["flight", "payload_g", "speed_mps", "in_design"])
+    ml_payload = pd.DataFrame(
+        ml, columns=["flight", "cruise_power_w", "rf_pred_w", "linear_pred_w"]
+    )
+    return flights, ml_payload
+
+
+def test_heatmap_cells_hold_design_flights_only() -> None:
+    fl, ml = _model_tables()
+    cells = payload_heatmap.cell_table(payload_heatmap.model_data(fl, ml))
+    assert len(cells) == 4
+    assert cells["flights"].tolist() == [2, 2, 2, 2]
+    assert cells["rf_gap"].tolist() == pytest.approx([2, 2, 2, 2])
+
+
+def test_every_heatmap_view_draws_and_gaps_share_one_scale() -> None:
+    fl, ml = _model_tables()
+    scales = {}
+    for view in payload_heatmap.VIEWS:
+        trace = payload_heatmap.build_payload_heatmap(fl, ml, view).data[0]
+        assert trace.z.shape == (2, 2)
+        scales[view] = (trace.zmin, trace.zmax)
+    assert scales["rf_gap"] == scales["lin_gap"]
+    assert scales["observed"] == scales["rf"]
+
+
+def test_heatmap_findings() -> None:
+    fl, ml = _model_tables()
+    observed = payload_heatmap.describe_payload_heatmap(fl, ml, "observed")
+    assert observed.startswith(
+        "Cruise power goes from 460 W at 0 g to 560 W at 500 g, about 50 W for every 250 g."
+    )
+    assert "lowest at 4 m/s (500 W) and highest at 12 m/s (520 W)" in observed
+    gap = payload_heatmap.describe_payload_heatmap(fl, ml, "lin_gap")
+    assert "+10.0 W at 0 g and 12 m/s, where it predicts too little" in gap
+    assert "−5.0 W at 0 g and 4 m/s, where it predicts too much" in gap
+    assert gap.endswith("On average, a cell is 7.5 W away from the measurement.")
+
+
+def test_scores_and_signed_numbers() -> None:
+    scores = payload_heatmap.model_scores(METRICS)
+    assert scores["rf"] == "0.79 ± 0.01"
+    assert scores["lin"] == "0.77 ± <0.01"
+    assert scores["unseen"] == "0.76 / 0.75"
+    assert payload_heatmap.model_scores({}) is None
+    assert payload_heatmap._signed(-0.01) == "0.0 W"
+    assert payload_heatmap._signed(-4.5) == "−4.5 W"
+
+
+def test_side_charts_and_empty_inputs() -> None:
+    fl, ml = _model_tables()
+    assert len(payload_heatmap.build_prediction_scatter(fl, ml).data) == 3  # 2 payloads + line
+    assert list(payload_heatmap.build_importance(METRICS).data[0].y) == [
+        "Altitude",
+        "Speed",
+        "Payload",
+    ]
+    assert len(payload_heatmap.build_importance({}).data) == 0
+    none = fl.iloc[0:0]
+    assert payload_heatmap.describe_payload_heatmap(none, ml) is None
+    assert len(payload_heatmap.build_payload_heatmap(none, ml).data) == 0
