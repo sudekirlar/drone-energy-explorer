@@ -36,6 +36,10 @@ Newest at the bottom. Reference an entry in PRs and the report as `D<n>`.
 - **Why:** with about three repeats per configuration, MAD flagged 23 flights; the joint deviation
   flags 4, including the known high-wind flight 129. Row-level IQR flags take-off and landing
   transients, which are real, not errors.
+- **Update (2026-11-14):** the rule as implemented in `preprocess.py` flags **15** flights, all
+  R1 design flights, including 129 and 85. The prototype's 4 came from a different definition and
+  is not comparable. "Hide outlier flights" in the sidebar therefore hides 15 flights; the
+  README and the Data Quality section use 15.
 
 ## D5 · Second ML algorithm: Random Forest regression of cruise power
 - **Decision:** predict cruise power (W) from payload, speed and altitude; one row per flight;
@@ -146,3 +150,35 @@ Newest at the bottom. Reference an entry in PRs and the report as `D<n>`.
 - **Why:** the Data columns and the Platform columns live in the same tables, which pass the
   contract only when both are filled, so one step validates and writes them together;
   Streamlit Cloud has no raw data, so it can only read committed tables.
+
+## D16 · Energy section: what each chart leaves out, and why
+- **Sankey (chart 4):** the Ground sub-phase is not drawn (motors idle on the ground, under 1 %
+  of any flight; the About text says so). Altitude, speed and payload compare only R1 design
+  flights; "Route" uses every filtered flight. A "percent" toggle was tried and removed: it only
+  equalised the group nodes, while the hover and the finding already give shares. The middle and
+  right nodes are sums over the groups, so their hover gives the mean over the groups instead.
+- **Treemap (chart 5):** size is the number of flights and is nearly equal by design; colour
+  (median Wh/km) carries the result. The level order is a menu because the hierarchy is ours.
+  Icicle and sunburst open two levels deep, because 60 leaves were unreadable as thin rows.
+- **Payload x speed heatmap (chart 6):** the card's own altitude menu from the chart guide was
+  dropped, because the sidebar already filters altitude and two filters could contradict each
+  other. The two power views share one colour scale and the two difference views share another,
+  so switching views compares like with like. The finding leads with the shape across speed;
+  the payload effect is the violin's finding (chart 9).
+- **Colour and contrast:** Sankey bands use opacity 0.55, because at 0.35 the take-off and cruise
+  bands came too close under simulated protanopia and tritanopia (CIELAB distance about 8; at
+  0.55 every main-phase pair stays above 12 in both themes). Sankey node labels take the page's
+  text colour through CSS, and heatmap cell text is dark or white by the cell's lightness,
+  because Streamlit's chart theme gives all chart text one mid-grey colour.
+- **Uncertainty:** heatmap hovers give the spread of the measured flights in each cell
+  (standard deviation); treemap hovers give the middle half of the flights (25th to 75th
+  percentile) from three flights up.
+
+## D17 · The pipeline re-runs the regression; its tests use one seed
+- **Decision:** `pipeline.py` ends by re-evaluating the regression (`regressor.py`) on the
+  flights table it has just written, and rewrites `ml_payload` and `ml_metrics.json`
+  (`--skip-model` turns this off). The regressor's tests evaluate once, with one seed, and share
+  the result.
+- **Why:** without the step, a rebuilt `flights` table would sit next to predictions made from
+  the old one. Five seeds only make the published scores steadier; the behaviour the tests
+  check is the same with one seed, and the test suite went from about 70 s to about 10 s.

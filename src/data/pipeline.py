@@ -2,12 +2,17 @@
 
     python -m src.data.pipeline               # whole pipeline, needs data/raw/
     python -m src.data.pipeline --skip-clean  # reuse data/intermediate/ from an earlier run
+    python -m src.data.pipeline --skip-model  # leave ml_payload and ml_metrics.json as they are
 
 Steps
 1. Cleaning (Data, ``src/data/build_processed.py``): raw files -> ``data/intermediate/``.
 2. Phases (Platform, ``src/data/phases.py``): phase columns and the phase tables.
 3. Contract check and write (this file): every table is validated against
    ``src/data/schema.py`` and written to ``data/processed/`` under its contract file name.
+4. Model (UI & ML, ``src/ml/regressor.py``): the Random Forest and linear regression are
+   evaluated again on the new ``flights`` table, and ``ml_payload`` and ``ml_metrics.json`` are
+   rewritten. Without this step a rebuilt ``flights`` table would sit next to predictions made
+   from the old one. It takes about half a minute (5-fold cross-validation, 5 seeds).
 
 This is the only module that writes ``data/processed/``. The files there are committed to git,
 because Streamlit Cloud has no raw data; rerun this script and commit them again whenever a
@@ -25,6 +30,7 @@ from pathlib import Path
 import pandas as pd
 
 from src.data import build_processed, loader, phases, schema
+from src.ml import regressor
 
 INTERMEDIATE = Path("data/intermediate")
 PROCESSED = Path("data/processed")
@@ -85,12 +91,31 @@ def report(tables: dict[str, pd.DataFrame]) -> None:
     print(f"R1 design flights with exactly two WP turns: {two_turns} of {len(design)}")
 
 
-def run(clean: bool = True, intermediate: Path = INTERMEDIATE, processed: Path = PROCESSED) -> None:
+def write_model(flights: pd.DataFrame, processed: Path = PROCESSED) -> dict:
+    """Re-evaluate the cruise power models on ``flights`` and write their two output files.
+
+    The model code is UI & ML's (src/ml/regressor.py); this step only makes sure it runs on the
+    same flights table that was just written, and prints the headline scores.
+    """
+    metrics = regressor.build_and_save_artifacts(flights=flights, output_dir=processed).metrics
+    rf, lin = metrics["random_forest"]["cv"], metrics["linear_regression"]["cv"]
+    print(f"Random Forest R2 {rf['r2_mean']:.3f}, linear R2 {lin['r2_mean']:.3f}")
+    return metrics
+
+
+def run(
+    clean: bool = True,
+    model: bool = True,
+    intermediate: Path = INTERMEDIATE,
+    processed: Path = PROCESSED,
+) -> None:
     if clean:
         build_processed.build()
     tables = assemble(read_intermediate(intermediate))
     write(tables, processed)
     report(tables)
+    if model:
+        write_model(tables["flights"], processed)
     print(f"Contract tables written to: {processed}")
 
 
@@ -101,5 +126,10 @@ if __name__ == "__main__":
         action="store_true",
         help="reuse data/intermediate/ instead of rebuilding it from data/raw/",
     )
+    parser.add_argument(
+        "--skip-model",
+        action="store_true",
+        help="do not re-evaluate the regression models (ml_payload, ml_metrics.json)",
+    )
     args = parser.parse_args()
-    run(clean=not args.skip_clean)
+    run(clean=not args.skip_clean, model=not args.skip_model)
