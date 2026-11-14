@@ -75,6 +75,7 @@ def cell_table(data: pd.DataFrame) -> pd.DataFrame:
         .agg(
             flights=("flight", "size"),
             observed=("cruise_power_w", "mean"),
+            spread=("cruise_power_w", "std"),
             rf=("rf_pred_w", "mean"),
             linear=("linear_pred_w", "mean"),
         )
@@ -99,12 +100,19 @@ def _empty(text: str) -> go.Figure:
     return fig
 
 
+def _spread(row: pd.Series) -> str:
+    """' (flights differ by ±12 W)': the standard deviation of the measurements in the cell."""
+    if row["flights"] < 2 or pd.isna(row["spread"]) or row["spread"] < 0.5:
+        return ""
+    return f" (flights differ by ±{row['spread']:.0f} W)"
+
+
 def _hover(row: pd.Series) -> str:
     n = int(row["flights"])
     return (
         f"<b>{int(row['payload_g'])} g · {int(row['speed_mps'])} m/s</b> · "
         f"{n} flight{'s' if n != 1 else ''}<br>"
-        f"measured {row['observed']:.0f} W<br>"
+        f"measured {row['observed']:.0f} W" + _spread(row) + "<br>"
         f"Random Forest {row['rf']:.0f} W (difference {_signed(row['rf_gap'])})<br>"
         f"linear model {row['linear']:.0f} W (difference {_signed(row['lin_gap'])})"
     )
@@ -298,25 +306,32 @@ def describe_payload_heatmap(
     cells = cell_table(data)
 
     if view == "observed":
-        parts = []
+        # Speed comes first: the payload effect is also the violin's and the SPLOM's finding,
+        # while the shape across speed is what this chart (and the model views) add.
+        by_speed = data.groupby("speed_mps")["cruise_power_w"].mean()
+        if len(by_speed) > 2 and by_speed.idxmin() not in (by_speed.index[0], by_speed.index[-1]):
+            first, low, last = by_speed.index[0], by_speed.idxmin(), by_speed.index[-1]
+            return (
+                f"Across speeds, cruise power goes from {by_speed[first]:.0f} W at {first} m/s "
+                f"down to {by_speed[low]:.0f} W at {low} m/s, and back up to "
+                f"{by_speed[last]:.0f} W at {last} m/s. A straight line cannot follow this bend, "
+                "which is what the two difference views test."
+            )
+        if len(by_speed) > 1:
+            return (
+                f"Across speeds, cruise power is lowest at {by_speed.idxmin()} m/s "
+                f"({by_speed.min():.0f} W) and highest at {by_speed.idxmax()} m/s "
+                f"({by_speed.max():.0f} W)."
+            )
         by_payload = data.groupby("payload_g")["cruise_power_w"].mean()
         if len(by_payload) > 1:
-            lo_p, hi_p = by_payload.index[0], by_payload.index[-1]
-            step = (by_payload[hi_p] - by_payload[lo_p]) / ((hi_p - lo_p) / 250)
-            parts.append(
-                f"Cruise power goes from {by_payload[lo_p]:.0f} W at {lo_p} g to "
-                f"{by_payload[hi_p]:.0f} W at {hi_p} g, about {step:.0f} W for every 250 g."
+            return (
+                f"At {by_speed.index[0]} m/s, cruise power goes from "
+                f"{by_payload.iloc[0]:.0f} W at {by_payload.index[0]} g to "
+                f"{by_payload.iloc[-1]:.0f} W at {by_payload.index[-1]} g."
             )
-        by_speed = data.groupby("speed_mps")["cruise_power_w"].mean()
-        if len(by_speed) > 1:
-            parts.append(
-                f"Across speeds it is lowest at {by_speed.idxmin()} m/s ({by_speed.min():.0f} W) "
-                f"and highest at {by_speed.idxmax()} m/s ({by_speed.max():.0f} W)."
-            )
-        if not parts:
-            row = cells.iloc[0]
-            parts.append(f"The flights at {_cell_name(row)} cruise at {row['observed']:.0f} W.")
-        return " ".join(parts)
+        row = cells.iloc[0]
+        return f"The flights at {_cell_name(row)} cruise at {row['observed']:.0f} W."
 
     if view == "rf":
         lo, hi = cells.loc[cells["rf"].idxmin()], cells.loc[cells["rf"].idxmax()]

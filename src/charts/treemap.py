@@ -44,6 +44,17 @@ def _value_text(value, level: str) -> str:
     return f"{value}{LEVELS[level][1]}"
 
 
+def _middle_half(values: pd.Series) -> str:
+    """'<br>middle half of the flights: 27.9–29.4 Wh/km' (25th to 75th percentile).
+
+    Left empty below three flights, where a range of the middle half means little.
+    """
+    if len(values) < 3:
+        return ""
+    q1, q3 = values.quantile([0.25, 0.75])
+    return f"<br>middle half of the flights: {q1:.1f}–{q3:.1f} Wh/km"
+
+
 def tree_nodes(flights: pd.DataFrame, order: tuple[str, ...]) -> pd.DataFrame:
     """One row per box: id, parent, label, number of flights and median Wh/km.
 
@@ -63,13 +74,14 @@ def tree_nodes(flights: pd.DataFrame, order: tuple[str, ...]) -> pd.DataFrame:
             "depth": 0,
             "flights": len(grid),
             "median": grid[METRIC].median(),
+            "spread": _middle_half(grid[METRIC]),
         }
     ]
     for depth in range(1, len(order) + 1):
         keys = columns[:depth]
         stats = (
             grid.groupby(keys)[METRIC]
-            .agg(flights="size", median="median")
+            .agg(flights="size", median="median", spread=_middle_half)
             .reset_index()
             .sort_values(keys)
         )
@@ -86,6 +98,7 @@ def tree_nodes(flights: pd.DataFrame, order: tuple[str, ...]) -> pd.DataFrame:
                     "depth": depth,
                     "flights": int(rec.flights),
                     "median": float(rec.median),
+                    "spread": rec.spread,
                 }
             )
     return pd.DataFrame(rows)
@@ -128,7 +141,7 @@ def build_treemap(
                 showscale=True,
                 colorbar=dict(title=dict(text="Wh/km<br>(median)"), thickness=12),
             ),
-            customdata=nodes[["path", "median", "flights"]],
+            customdata=nodes[["path", "median", "flights", "spread"]],
             # Treemap boxes are small, so the unit stays on the colour bar there.
             texttemplate=(
                 "%{label}<br>%{customdata[1]:.0f}"
@@ -137,7 +150,7 @@ def build_treemap(
             ),
             hovertemplate=(
                 "<b>%{customdata[0]}</b><br>median %{customdata[1]:.1f} Wh/km<br>"
-                "%{customdata[2]} flights<extra></extra>"
+                "%{customdata[2]} flights%{customdata[3]}<extra></extra>"
             ),
             **extra,
         )

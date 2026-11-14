@@ -160,8 +160,8 @@ def render(tables: dict[str, pd.DataFrame]) -> None:
     st.markdown(SANKEY_LABEL_CSS, unsafe_allow_html=True)
     st.markdown("### Energy & Experimental Conditions")
     st.caption(
-        "Where the energy goes, and how payload, altitude and speed change it. These charts "
-        "compare the R1 flights of the experiment."
+        "Where the energy goes, and how payload, altitude and speed change it. Most of these "
+        "charts compare the R1 flights of the experiment."
     )
     flights = tables.get("flights")
     phase_energy = tables.get("phase_energy")

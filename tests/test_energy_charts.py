@@ -190,6 +190,13 @@ def test_tree_finding_names_cheapest_and_dearest_setting() -> None:
     )
 
 
+def test_tree_hover_gives_the_middle_half_from_three_flights() -> None:
+    grid = pd.concat([_grid()] * 3, ignore_index=True)  # every setting flown three times
+    nodes = treemap.tree_nodes(grid, ORDER)
+    assert nodes["spread"].str.startswith("<br>middle half of the flights:").all()
+    assert (treemap.tree_nodes(_grid(), ORDER).query("depth == 3")["spread"] == "").all()
+
+
 def test_tree_with_no_design_flights() -> None:
     only_r7 = _grid().loc[lambda d: ~d["in_design"]]
     assert treemap.describe_treemap(only_r7, ORDER) is None
@@ -259,11 +266,10 @@ def test_every_heatmap_view_draws_and_gaps_share_one_scale() -> None:
 
 def test_heatmap_findings() -> None:
     fl, ml = _model_tables()
-    observed = payload_heatmap.describe_payload_heatmap(fl, ml, "observed")
-    assert observed.startswith(
-        "Cruise power goes from 460 W at 0 g to 560 W at 500 g, about 50 W for every 250 g."
+    # Two speeds only: the finding names the lowest and the highest.
+    assert payload_heatmap.describe_payload_heatmap(fl, ml, "observed") == (
+        "Across speeds, cruise power is lowest at 4 m/s (500 W) and highest at 12 m/s (520 W)."
     )
-    assert "lowest at 4 m/s (500 W) and highest at 12 m/s (520 W)" in observed
     gap = payload_heatmap.describe_payload_heatmap(fl, ml, "lin_gap")
     assert "+10.0 W at 0 g and 12 m/s, where it predicts too little" in gap
     assert "−5.0 W at 0 g and 4 m/s, where it predicts too much" in gap
@@ -292,3 +298,29 @@ def test_side_charts_and_empty_inputs() -> None:
     none = fl.iloc[0:0]
     assert payload_heatmap.describe_payload_heatmap(none, ml) is None
     assert len(payload_heatmap.build_payload_heatmap(none, ml).data) == 0
+
+
+def test_heatmap_finding_describes_a_bend_across_speed() -> None:
+    fl = pd.DataFrame(
+        {"flight": [1, 2, 3], "payload_g": [0, 0, 0], "speed_mps": [4, 8, 12], "in_design": True}
+    )
+    ml = pd.DataFrame(
+        {
+            "flight": [1, 2, 3],
+            "cruise_power_w": [510.0, 495.0, 525.0],
+            "rf_pred_w": [510.0, 495.0, 525.0],
+            "linear_pred_w": [500.0, 510.0, 520.0],
+        }
+    )
+    assert payload_heatmap.describe_payload_heatmap(fl, ml, "observed").startswith(
+        "Across speeds, cruise power goes from 510 W at 4 m/s down to 495 W at 8 m/s, and back "
+        "up to 525 W at 12 m/s."
+    )
+
+
+def test_hover_shows_how_much_flights_differ() -> None:
+    fl, ml = _model_tables()
+    ml.loc[ml["flight"] == 1, "cruise_power_w"] += 10  # the two 0 g, 4 m/s flights now differ
+    cells = payload_heatmap.cell_table(payload_heatmap.model_data(fl, ml))
+    assert "(flights differ by ±7 W)" in payload_heatmap._hover(cells.iloc[0])
+    assert "flights differ" not in payload_heatmap._hover(cells.iloc[1])  # equal flights
