@@ -122,7 +122,7 @@ def render_multivariate_ml(flights: pd.DataFrame) -> None:
             "Groups are ordered from lowest to highest mean energy consumption so that Group 1 "
             "always denotes the lowest-energy flights for the chosen k.",
         ),
-        author="Pelin G?l K?z?lk?l??",
+        author="Pelin Gül Kızılkılıç",
     )
 
     cluster_labels: pd.Series | None = None
@@ -164,7 +164,7 @@ def render_multivariate_ml(flights: pd.DataFrame) -> None:
             "Use the colour selector to compare payload mass, cruise altitude, or the K-means "
             "groups produced using the k slider in the chart above.",
         ),
-        author="Pelin G?l K?z?lk?l??",
+        author="Pelin Gül Kızılkılıç",
     )
 
     with chart_card(splom_info) as splom_card:
