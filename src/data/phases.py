@@ -1,8 +1,8 @@
-"""Estimated flight phases, phase energy and waypoints (task T6, owner: Platform).
+"""Estimated flight phases, phase energy and waypoints (owner: Platform).
 
 Input is the raw-rate telemetry written by ``src/data/build_processed.py`` (one row per raw
-sample, produced by ``preprocess.clean_telemetry``). The rule (chart guide, "Uçuşun evreleri";
-decision D6) labels every sample with one of eight sub-phases:
+sample, produced by ``preprocess.clean_telemetry``). The rule (see decision D6) labels every
+sample with one of eight sub-phases:
 
     Ground        power below 60 W
     Spool-up      motors on, before the climb starts

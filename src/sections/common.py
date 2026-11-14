@@ -23,11 +23,10 @@ Sections fill a ``CardInfo`` with the texts and draw their controls and chart in
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator
+from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 
-import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
@@ -70,30 +69,3 @@ def chart_card(info: CardInfo) -> Iterator[Card]:
             st.info(card.finding)
         with st.expander("About this chart"):
             st.markdown("\n\n".join([*info.about, f"This chart was made by **{info.author}**."]))
-
-
-@st.fragment
-def render_example_card(
-    title: str,
-    how_to_read: str,
-    tables: dict[str, pd.DataFrame],
-    options: dict[str, Callable[[dict[str, pd.DataFrame]], tuple[go.Figure, str]]],
-    key_prefix: str,
-    about_text: str | None = None,
-) -> None:
-    """T4 example card (still used by Overview). New charts should use ``chart_card``."""
-    with st.container(border=True):
-        st.subheader(title)
-        st.caption(how_to_read)
-        selected_view = st.selectbox(
-            "View",
-            options=list(options.keys()),
-            key=f"{key_prefix}_view",
-        )
-        fig, finding_text = options[selected_view](tables)
-        st.plotly_chart(fig, width="stretch", key=f"{key_prefix}_chart", config=PLOTLY_CONFIG)
-        st.info(finding_text)
-        # Only cards that say who made them and why get the expander; no default author.
-        if about_text:
-            with st.expander("About this chart"):
-                st.markdown(about_text)
