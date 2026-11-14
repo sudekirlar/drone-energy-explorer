@@ -17,6 +17,6 @@ Metrics computed in `src/ml/regressor.py` (`data/processed/ml_metrics.json`):
 - **Generalization:** Grouping folds by the 60 `(payload_g, speed_mps, altitude_m)` configurations prevents repeat-flight leakage; Random Forest retains a +0.013 $R^2$ and −0.66 W MAE advantage on unseen combinations.
 
 ## Limitations & Responsible Use
-- **R6 Route Shift:** Trained exclusively on R1 rectangular flights; routes with continuous climbs or tighter turns (such as R6/R7) exhibit systematic distribution shifts in power draw.
+- **R6 Route Shift:** Trained exclusively on R1 triangular flights; routes with continuous climbs or tighter turns (such as R6/R7) exhibit systematic distribution shifts in power draw.
 - **Single Airframe (DJI Matrice 100):** Valid only for the DJI Matrice 100 quadcopter under the recorded battery, propeller, and weather conditions; do not extrapolate to other airframes or payloads above 500 g.
 - **Association, Not Causation:** Model weights reflect empirical associations within the experimental grid and isolate cruise power only, omitting take-off, landing, and ambient wind energy costs.
