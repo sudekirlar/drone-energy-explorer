@@ -55,19 +55,39 @@ def _build_pcp_finding(summary: pd.DataFrame, silhouette: float) -> str:
 
 
 def _build_splom_finding(flights: pd.DataFrame) -> str:
-    """Compute a data-driven finding sentence from the active flights table."""
+    """Compute a pairwise relationship finding from the active flights table."""
     if flights.empty:
         return "No flights match the current filter selection."
 
     parts: list[str] = []
 
+    if {"cruise_power_w", "climb_power_w"}.issubset(flights.columns):
+        pair_pow = flights[["cruise_power_w", "climb_power_w"]].dropna()
+        if (
+            len(pair_pow) >= 3
+            and pair_pow["cruise_power_w"].std() > 0
+            and pair_pow["climb_power_w"].std() > 0
+        ):
+            r_pow = float(pair_pow["cruise_power_w"].corr(pair_pow["climb_power_w"]))
+            parts.append(
+                f"Cruise power and climb power rise together across flights (r = {r_pow:.2f})."
+            )
+
     if {"speed_mps", "wh_per_km"}.issubset(flights.columns):
-        by_speed_wh = flights.groupby("speed_mps")["wh_per_km"].median().sort_index()
-        if len(by_speed_wh) >= 2:
+        pair_spd = flights[["speed_mps", "wh_per_km"]].dropna()
+        by_speed_wh = pair_spd.groupby("speed_mps")["wh_per_km"].median().sort_index()
+        if (
+            len(by_speed_wh) >= 2
+            and len(pair_spd) >= 3
+            and pair_spd["speed_mps"].std() > 0
+            and pair_spd["wh_per_km"].std() > 0
+        ):
+            r_spd = float(pair_spd["speed_mps"].corr(pair_spd["wh_per_km"]))
             s_min, s_max = by_speed_wh.index[0], by_speed_wh.index[-1]
             parts.append(
-                f"Median energy per kilometre falls from {by_speed_wh.iloc[0]:.1f} Wh/km at "
-                f"{s_min:g} m/s to {by_speed_wh.iloc[-1]:.1f} Wh/km at {s_max:g} m/s."
+                f"Speed vs Wh/km drops from {by_speed_wh.iloc[0]:.1f} Wh/km at "
+                f"{s_min:g} m/s to {by_speed_wh.iloc[-1]:.1f} Wh/km at {s_max:g} m/s along a "
+                f"curved trend, so linear correlation (r = {r_spd:.2f}) understates it."
             )
         elif len(by_speed_wh) == 1:
             s_only = by_speed_wh.index[0]
@@ -76,27 +96,7 @@ def _build_splom_finding(flights: pd.DataFrame) -> str:
                 f"{by_speed_wh.iloc[0]:.1f} Wh/km."
             )
 
-    if {"speed_mps", "cruise_power_w"}.issubset(flights.columns):
-        by_speed_p = flights.groupby("speed_mps")["cruise_power_w"].median().sort_index()
-        if len(by_speed_p) >= 3:
-            s_min, s_mid, s_max = (
-                by_speed_p.index[0],
-                by_speed_p.index[len(by_speed_p) // 2],
-                by_speed_p.index[-1],
-            )
-            parts.append(
-                f"Median cruise power follows a U-shape across speed ({by_speed_p.iloc[0]:.0f} W "
-                f"at {s_min:g} m/s, {by_speed_p.iloc[len(by_speed_p) // 2]:.0f} W at "
-                f"{s_mid:g} m/s, and {by_speed_p.iloc[-1]:.0f} W at {s_max:g} m/s)."
-            )
-
-    if {"payload_g", "cruise_power_w"}.issubset(flights.columns):
-        by_pay = flights.groupby("payload_g")["cruise_power_w"].median().sort_index()
-        if not by_pay.empty:
-            pay_items = [f"{int(p)} g: {val:.0f} W" for p, val in by_pay.items()]
-            parts.append("Median cruise power rises with payload (" + ", ".join(pay_items) + ").")
-
-    return " ".join(parts) if parts else "Pairwise flight telemetry distributions are shown above."
+    return " ".join(parts) if parts else "Pairwise flight telemetry relationships are shown above."
 
 
 def render_multivariate_ml(flights: pd.DataFrame) -> None:
@@ -122,7 +122,7 @@ def render_multivariate_ml(flights: pd.DataFrame) -> None:
             "Groups are ordered from lowest to highest mean energy consumption so that Group 1 "
             "always denotes the lowest-energy flights for the chosen k.",
         ),
-        author="Pelin Gül Kızılkılıç",
+        author="Pelin G?l K?z?lk?l??",
     )
 
     cluster_labels: pd.Series | None = None
@@ -164,7 +164,7 @@ def render_multivariate_ml(flights: pd.DataFrame) -> None:
             "Use the colour selector to compare payload mass, cruise altitude, or the K-means "
             "groups produced using the k slider in the chart above.",
         ),
-        author="Pelin Gül Kızılkılıç",
+        author="Pelin G?l K?z?lk?l??",
     )
 
     with chart_card(splom_info) as splom_card:
@@ -196,5 +196,9 @@ def render_multivariate_ml(flights: pd.DataFrame) -> None:
 
 def render(tables: dict[str, pd.DataFrame], filters: Any = None) -> None:
     """Entry point called by app.py section router."""
+    st.markdown("### Multivariate Analysis & ML")
+    st.caption(
+        "How flight variables cluster together and how power varies across operating conditions."
+    )
     flights = tables.get("flights", pd.DataFrame())
     render_multivariate_ml(flights)
