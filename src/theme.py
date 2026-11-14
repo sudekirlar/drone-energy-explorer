@@ -7,7 +7,7 @@ import plotly.io as pio
 
 from src.data import schema
 
-# Colours follow the team-approved chart guide ("On grafik, tek soru"), so the dashboard
+# Colours follow the team-approved chart guide, so the dashboard
 # matches the guide every chart was designed from.
 PALETTES = {
     # Sequential, for quantities (power, energy, Wh/km).
@@ -71,6 +71,15 @@ PALETTES = {
 
 assert set(PALETTES["phase"]) == set(schema.PHASES)
 assert set(PALETTES["sub_phase"]) == set(schema.SUB_PHASES)
+
+# Neutral colours for what is not data: text drawn on coloured cells, reference lines and the
+# edges of points. Each one reads on both the light and the dark Streamlit theme.
+NEUTRALS = {
+    "text_dark": "#1d1c1a",  # text on a light cell
+    "text_light": "#ffffff",  # text on a dark cell
+    "reference": "rgba(128,128,128,0.7)",  # e.g. the "perfect prediction" line, error bars
+    "outline": "rgba(255,255,255,0.7)",  # edge that keeps dark points visible on a dark page
+}
 
 
 def get_plotly_template() -> go.layout.Template:
