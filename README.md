@@ -13,6 +13,20 @@ quadcopter, recorded by Carnegie Mellon University in 2019.
 
 _This README is a skeleton. Sections marked TODO are filled in during the week._
 
+## Approach (CRISP-DM)
+
+We followed the six phases of CRISP-DM. The table shows what each phase meant in this project
+and where to find it.
+
+| Phase | What we did | Where |
+|---|---|---|
+| Business understanding | We asked how payload, cruise speed and altitude change the energy of a delivery drone, and in which part of the flight the energy is spent. | The question above; the Overview section |
+| Data understanding | We explored the data before building any chart. We found that `wind_speed` is the drone's airspeed, not the wind, and that only 16 of the 214 days in the collection period have flights. | [Dataset](#dataset); D1 and D3 in [docs/decisions.md](docs/decisions.md) |
+| Data preparation | We cleaned the telemetry, flagged outlier flights, estimated the flight phases and checked every table against a data contract. | [Data cleaning](#data-cleaning); D4, D6, D14 and D15 |
+| Modeling | We grouped the flights with K-means and predicted cruise power with a Random Forest, compared with a linear model. | [Machine learning](#machine-learning); [docs/MODEL_CARD.md](docs/MODEL_CARD.md); D5 |
+| Evaluation | We scored the models with cross-validation, rated every chart with RUSTIC and tested the code and the data automatically. | [Chart evaluation](#chart-evaluation-q3---rustic-framework); [Testing](#testing) |
+| Deployment | The dashboard runs on Streamlit Community Cloud from the `main` branch. | The live link above; D9 |
+
 ---
 
 ## Dataset
@@ -37,16 +51,30 @@ R1 experiment form a hierarchy (payload, altitude and speed), which the treemap 
 
 ## Run locally
 
+You need Python 3.13 and Git. The processed tables the app reads are in the repository, so you
+do not need to download the raw data to run the app.
+
 ```bash
+git clone https://github.com/sudekirlar/drone-energy-explorer.git
+cd drone-energy-explorer
 python -m venv .venv
 .venv\Scripts\activate                 # macOS/Linux: source .venv/bin/activate
 pip install -r requirements-dev.txt
-streamlit run app.py
+streamlit run app.py                   # opens the app at http://localhost:8501
 ```
 
-Requires Python 3.13.
+To check the installation, run `pytest`. All tests should pass.
+
+To rebuild the processed tables from the raw CMU files, put the files into `data/raw/` (see
+[`data/raw/README.md`](data/raw/README.md)) and run `python -m src.data.pipeline`. It cleans the
+telemetry, estimates the flight phases, checks every table against the data contract, writes
+`data/processed/` and evaluates the regression models again.
 
 ## Repository layout
+
+The code has three layers. `src/data`, `src/ml` and `src/charts` are plain Python and never
+import Streamlit, so they can be tested without a browser. `src/sections` and `app.py` hold
+everything the visitor sees. A test (`tests/test_architecture.py`) checks this rule.
 
 ```
 app.py              entry point: menu, sidebar filters, sections (UI layer)
@@ -140,9 +168,44 @@ Each of the ten dashboard charts (G1-G10) is rated on a 1-5 scale using the cour
 - **Cut-axis honesty (G9, T = 4):** Added an explicit on-chart note whenever the power Y-axis starts above 0 W so baseline differences are not visually exaggerated.
 
 
+## Testing
+
+The tests in `tests/` check the code and the data. CI runs the linter and every test on each pull
+request and on `main`, and a pull request cannot be merged while CI fails. The tests cover:
+
+- **The data contract:** every table has the expected columns, types, units and keys, and a broken
+  table is reported by name (`test_loader.py`).
+- **Cleaning:** power, energy integration at the original sampling rate, distances and time gaps
+  (`test_data.py`, `test_raw_telemetry.py`).
+- **Estimated phases:** the phase energies of a flight add up exactly to its total energy, and every
+  flight has a row for every sub-phase (`test_phases.py`).
+- **Charts:** the data shaping and the finding texts of the charts, on small synthetic tables.
+- **Models:** K-means and the regression (`test_clustering.py`, `test_regressor.py`).
+- **The app as a whole:** the layer rule (`test_architecture.py`) and a smoke test that opens every
+  section (`test_app_smoke.py`).
+
 ## Machine learning
 
 TODO: K-means clustering and Random Forest regression, evaluation and limitations.
+
+## Assignment requirements
+
+Each requirement of the assignment, where it is met, and how to check it.
+
+| Requirement | Where | Evidence |
+|---|---|---|
+| A data set with at least 2,000 rows, 7 columns and varied data types | [Dataset](#dataset) | `flights.csv` has 257,896 rows and 28 columns, and `parameters.csv` has 209 rows and 7 columns. The data are numerical, categorical, ordinal, temporal and geographic. |
+| Cleaning: missing values, outliers and data quality | [Data cleaning](#data-cleaning); the Overview section | Samples without a time or power reading are dropped, never filled in. 15 outlier flights are flagged (D4) and can be hidden in the sidebar. The Overview lists every cleaning rule with the number of rows it changed, and the ISO/IEC 25012 checks. |
+| At least 9 visualizations, 3 per member | [Visualizations](#visualizations) | There are ten charts: G1–G3 by İlayda Demir, G4–G6 by Sude Kırlar and G7–G10 by Pelin Gül Kızılkılıç. |
+| At least 6 advanced types | D7 in [docs/decisions.md](docs/decisions.md) | Seven charts are advanced types: the route map, the Sankey diagram, the treemap (with icicle and sunburst), parallel coordinates, the Space-Time Cube, the scatterplot matrix and the flight × time heatmap. |
+| A unique insight in every chart | The finding box of each card | Each card answers its own question, and its finding is computed from the flights on screen. |
+| Interactivity in every chart | The "Interaction" column of [Visualizations](#visualizations) | Every chart has hover texts, except the parallel coordinates, which Plotly draws without hover; there, the visitor filters by dragging along an axis. Other interactions are zooming and panning the map and the charts, dragging Sankey nodes, zooming into the tree by clicking, selecting points in the scatterplot matrix, and sending flights from the map to the cube and the timeline. |
+| At least three interactive components | The sidebar and the cards | Multiselect menus filter payload, altitude and speed; checkboxes hide outlier flights and add routes R2–R7; dropdown menus change each card's view; a slider sets the number of K-means groups. |
+| Labels and visual consistency | [docs/interfaces.md](docs/interfaces.md) ("Card pattern"); `src/theme.py` | Every card has the same parts in the same order. Axes have titles with units, and all colours come from one theme file. |
+| Two machine-learning algorithms | [Machine learning](#machine-learning); [docs/MODEL_CARD.md](docs/MODEL_CARD.md) | K-means groups the flights (G7, shared with G8 and G10). A Random Forest regression predicts cruise power and is compared with a linear model (G6). |
+| Colour schemes, legends and annotations | `src/theme.py`; D16 | Quantities use Viridis, groups use the Okabe–Ito colours, and differences use a diverging blue–red scale. The Energy charts were checked under simulated colour-vision deficiencies. A cut axis is marked on the chart (G9). |
+| A public GitHub repository with `app.py`, the data and a README | This repository | `app.py` is the entry point. The processed tables are in `data/processed/`, and the raw data are linked in [Dataset](#dataset). [Run locally](#run-locally) explains the setup. |
+| Each member's contribution | [Contributions](#contributions) | One list per member, and every commit and review on GitHub under the member's own name. |
 
 ## Contributions
 
