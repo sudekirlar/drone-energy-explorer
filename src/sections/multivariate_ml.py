@@ -1,4 +1,4 @@
-"""Multivariate and ML section (owner: uiml)."""
+"""Comparison & Clusters section: all flights compared at once (owner: uiml)."""
 
 from __future__ import annotations
 
@@ -238,17 +238,18 @@ def render_multivariate_ml(flights: pd.DataFrame, telemetry: pd.DataFrame) -> No
         )
         color_mode = color_options[selected_label]
 
+        # Without cluster labels only this card stops; the violin and the flight timelines
+        # below must still be drawn, so this must not return from the whole section.
         if color_mode == "cluster" and cluster_labels is None:
             st.warning("Cluster labels are unavailable for the current filter selection.")
-            return
-
-        fig_splom = build_splom(
-            design_flights,
-            color_by=color_mode,
-            labels=cluster_labels,
-        )
-        splom_card.plot(fig_splom, key="splom_chart")
-        splom_card.finding = _build_splom_finding(design_flights)
+        else:
+            fig_splom = build_splom(
+                design_flights,
+                color_by=color_mode,
+                labels=cluster_labels,
+            )
+            splom_card.plot(fig_splom, key="splom_chart")
+            splom_card.finding = _build_splom_finding(design_flights)
 
     violin_info = CardInfo(
         title="Power by phase and payload",
@@ -285,14 +286,14 @@ def render_multivariate_ml(flights: pd.DataFrame, telemetry: pd.DataFrame) -> No
         title="Flight timelines across the campaign",
         how_to_read=(
             "Each horizontal row is one flight aligned from take-off in 2-second slices, "
-            "coloured either by flight phase or electrical power (W). Horizontal black lines "
+            "coloured either by flight phase or electrical power (W). Horizontal grey lines "
             "separate the chosen grouping blocks."
         ),
         about=(
             "By default only the 181 R1 design flights are shown; enable 'Include R2-R7' to "
             "compare the other campaign routes alongside them.",
-            "Sorting by K-means cluster uses the k value from the Multivariate & ML cluster "
-            "slider (default k = 3).",
+            "Sorting by K-means cluster uses the k value from the slider in the Flight groups "
+            "card above (default k = 3).",
         ),
         author="Pelin Gül Kızılkılıç",
     )
@@ -350,9 +351,10 @@ def render_multivariate_ml(flights: pd.DataFrame, telemetry: pd.DataFrame) -> No
 
 def render(tables: dict[str, pd.DataFrame], filters: Any = None) -> None:
     """Entry point called by app.py section router."""
-    st.markdown("### Multivariate Analysis & ML")
+    st.markdown("### Comparison & Clusters")
     st.caption(
-        "How flight variables cluster together and how power varies across operating conditions."
+        "All flights compared at once: K-means groups across nine measures, how the measures "
+        "relate in pairs, power by phase and payload, and every flight second by second."
     )
     flights = tables.get("flights", pd.DataFrame())
     telemetry = tables.get("telemetry_1hz", pd.DataFrame())
