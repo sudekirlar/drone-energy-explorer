@@ -67,9 +67,8 @@ Newest at the bottom. Reference an entry in PRs and the report as `D<n>`.
   treemap family, parallel coordinates. Candidates: Space-Time Cube, SPLOM, flight × time heatmap.
   Basic: timeline, payload × speed heatmap, violin.
 - **Why:** six advanced charts are required; two of the three candidates are enough, so one
-  rejection still leaves the requirement met. We asked the instructor about the Space-Time Cube
-  and the SPLOM early. Connected scatterplot and ternary plot were dropped from earlier
-  drafts.
+  rejection still leaves the requirement met. Connected scatterplot and ternary plot were dropped
+  from earlier drafts.
 
 ## D8 · Roles
 - **Decision:** Platform (Sude), Data (İlayda), UI & ML (Pelin); each also owns one dashboard
