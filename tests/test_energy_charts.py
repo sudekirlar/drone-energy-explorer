@@ -338,3 +338,17 @@ def test_energy_charts_take_every_colour_from_the_theme(module) -> None:
     source = Path(module.__file__).read_text(encoding="utf-8")
     literals = re.findall(r"#[0-9a-fA-F]{6}\b|rgba?\(\s*\d", source)
     assert literals == [], f"{module.__name__} defines its own colours: {literals}"
+
+
+def test_heatmap_cells_show_only_a_short_number() -> None:
+    """Cell labels must fit narrow cells on a phone: no unit, no flight count, no line break."""
+    assert payload_heatmap._cell_number(556.4) == "556"
+    assert payload_heatmap._cell_number(8.2, signed=True) == "+8"
+    assert payload_heatmap._cell_number(-4.6, signed=True) == "−5"
+    assert payload_heatmap._cell_number(-0.3, signed=True) == "0"
+    fl, ml = _model_tables()
+    for view in payload_heatmap.VIEWS:
+        labels = [
+            a.text for a in payload_heatmap.build_payload_heatmap(fl, ml, view).layout.annotations
+        ]
+        assert labels and all("<br>" not in t and " " not in t for t in labels)
