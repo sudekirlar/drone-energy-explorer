@@ -11,8 +11,6 @@ Team: Sude Kırlar, İlayda Demir, Pelin Gül Kızılkılıç
 An interactive Streamlit dashboard built from 209 recordings (196 analyzed flights) of a DJI Matrice 100 package-delivery
 quadcopter, recorded by Carnegie Mellon University in 2019.
 
-_This README is a skeleton. Sections marked TODO are filled in during the week._
-
 ## Approach (CRISP-DM)
 
 We followed the six phases of CRISP-DM. The table shows what each phase meant in this project
@@ -90,8 +88,6 @@ docs/               decisions, interfaces, model card
 
 ## Visualizations
 
-TODO: finish the complete ten-chart table with all three contributors.
-
 ### Flight & Temporal Analysis — İlayda Demir
 
 | Chart | Question | Interaction |
@@ -103,6 +99,7 @@ TODO: finish the complete ten-chart table with all three contributors.
 The route map sends selected flights to the 3D cube or to the timeline.
 Phase and waypoint labels are algorithmic estimates rather than hand-annotated ground truth.
 
+<<<<<<< HEAD
 ### Energy & Experimental Conditions — Sude Kırlar
 
 | Chart | Question | Interaction |
@@ -114,6 +111,19 @@ Phase and waypoint labels are algorithmic estimates rather than hand-annotated g
 Altitude, speed and payload are compared only on the R1 flights of the experiment, because only
 there are the three settings balanced. The Sankey's "Route" grouping uses every filtered flight.
 The model behind G6 is described in [docs/MODEL_CARD.md](docs/MODEL_CARD.md).
+
+### Multivariate Analysis & Unsupervised Regimes — Pelin Gül Kızılkılıç
+
+| Chart | Question | Interaction |
+|---|---|---|
+| G7 — Flight regimes (Parallel coordinates) | How do nine flight telemetry and energy measures co-vary across unsupervised operating regimes? | Vary K-means clusters (*k* = 2–6) with live silhouette feedback, drag axes to reorder dimensions, and brush subsets along any axis. |
+| G8 — Pairwise trade-offs (SPLOM) | What pairwise correlations and non-linear trade-offs emerge across speed, cruise/climb power, Wh/km and voltage drop? | Switch colour encodings across payload, altitude and K-means cluster, and box-select flights across linked panels. |
+| G9 — Phase × payload distributions (Violin) | How does mean power distribution shift across flight phases as payload increases from 0 g to 500 g? | Toggle individual flight observations over kernel density violins and compare median and interquartile ranges. |
+| G10 — Fleet-wide phase timeline (Heatmap) | How do phase durations and transitions compare across all 196 flights over elapsed flight time? | Sort flights dynamically (by altitude, payload, duration or energy), switch colour measures and filter route subsets. |
+
+The K-means cluster assignments (*k* = 2–6) computed in G7 propagate automatically into G8's cluster
+colouring and G10's horizontal group separators. G9 compares payloads on the balanced R1 experiment
+flights and annotates cut Y-axes explicitly; the clustering model is documented in [docs/MODEL_CARD.md](docs/MODEL_CARD.md).
 
 ## Data cleaning
 
@@ -186,7 +196,8 @@ request and on `main`, and a pull request cannot be merged while CI fails. The t
 
 ## Machine learning
 
-TODO: K-means clustering and Random Forest regression, evaluation and limitations.
+- **Unsupervised flight-regime clustering (K-means):** Z-score standardized flight-level telemetry features partitioned into *k* = 2–6 operating regimes (`src/ml/clustering.py`), evaluated in real time with the silhouette coefficient, linked across G7, G8 and G10, and documented with assumptions and limitations in [docs/MODEL_CARD.md](docs/MODEL_CARD.md).
+- **Supervised cruise-power prediction (Random Forest):** Predicts cruise power from payload and speed (`src/ml/`), evaluated with cross-validation against a linear baseline to power the measured, predicted and residual views in G6 ([docs/MODEL_CARD.md](docs/MODEL_CARD.md)).
 
 ## Assignment requirements
 
@@ -209,8 +220,6 @@ Each requirement of the assignment, where it is met, and how to check it.
 
 ## Contributions
 
-TODO: complete the contributions of the other team members.
-
 ### İlayda Demir — Data & Flight Analysis
 
 - Prepared flight telemetry, flight-level summaries, original-rate energy integration and quality logs.
@@ -219,6 +228,7 @@ TODO: complete the contributions of the other team members.
 - Connected flight selections between the map, 3D view and timeline.
 - Implemented the Overview data-quality content and contributed validation checks.
 
+<<<<<<< HEAD
 ### Sude Kırlar — Platform & Energy
 
 - Set up the repository: its structure, pinned dependencies, linting and pre-commit checks, CI, code owners, issue and pull request templates, and the contributing guide.
@@ -230,6 +240,17 @@ TODO: complete the contributions of the other team members.
 - Wrote the architecture test and the smoke test that opens every section.
 - Deployed the app on Streamlit Community Cloud and checked it with the real data.
 - Kept the decision log ([docs/decisions.md](docs/decisions.md)), reviewed pull requests and set the merge order.
+
+### Pelin Gül Kızılkılıç — Architecture, Clustering & Multivariate Analysis
+
+- Built the multi-page Streamlit application skeleton, section navigation, global sidebar filtering state and centralized visual theme (`app.py`, `src/theme.py`).
+- Designed the colour-vision-deficiency-safe Okabe–Ito, Viridis and diverging palettes (`src/theme.py`), verified contrast under simulated Deuteranopia, Protanopia and Tritanopia, and wrote automated palette accessibility tests (`tests/test_colours.py`, `D16`).
+- Implemented standardized K-means flight-regime clustering with live silhouette scoring (`src/ml/clustering.py`, `tests/test_clustering.py`) and co-authored [docs/MODEL_CARD.md](docs/MODEL_CARD.md).
+- Built G7 (9-axis interactive parallel coordinates with axis reordering and brushing, `pcp.py`) and linked its cluster selection across the multivariate views.
+- Built G8 (lower-triangle scatterplot matrix with multi-attribute colour encodings and box selection, `splom.py`).
+- Built G9 (phase × payload kernel-density violin distributions with optional observation overlays and cut-axis annotations, `violin.py`).
+- Built G10 (dense 2 s flight × time phase heatmap replacing the sparse calendar grid, with multi-metric sorting and cluster separators, `heatmap.py`, `D1`).
+- Authored unit tests for all four multivariate charts (`test_pcp.py`, `test_splom.py`, `test_violin.py`, `test_heatmap.py`) and led the RUSTIC quality-assurance fixes across axis labels and colour-blindness contrast.
 
 Process rules: [CONTRIBUTING.md](CONTRIBUTING.md).
 

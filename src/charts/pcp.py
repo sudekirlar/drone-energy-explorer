@@ -15,10 +15,10 @@ PCP_AXES: tuple[tuple[str, str, str], ...] = (
     ("altitude_m", "Altitude (m)", ".0f"),
     ("duration_s", "Duration (s)", ".0f"),
     ("energy_wh", "Energy (Wh)", ".1f"),
-    ("wh_per_km", "Wh per km (Wh/km)", ".1f"),
-    ("cruise_power_w", "Cruise power (W)", ".0f"),
-    ("climb_power_w", "Climb power (W)", ".0f"),
-    ("voltage_drop_v", "Voltage drop (V)", ".2f"),
+    ("wh_per_km", "Wh/km", ".1f"),
+    ("cruise_power_w", "Cruise (W)", ".0f"),
+    ("climb_power_w", "Climb (W)", ".0f"),
+    ("voltage_drop_v", "ΔVoltage (V)", ".2f"),
 )
 
 
@@ -120,6 +120,8 @@ def build_pcp(
     fig = go.Figure(
         data=[
             go.Parcoords(
+                labelfont={"size": 11},
+                tickfont={"size": 10},
                 line={
                     "color": cluster_codes.to_numpy(dtype=float),
                     "colorscale": _cluster_colorscale(k),
