@@ -36,11 +36,12 @@ SUB_PHASES: tuple[str, ...] = tuple(s for s in schema.SUB_PHASES if s != "Ground
 SUB_LABEL = {s: ("Waypoint turn" if s == "WP turn" else s) for s in SUB_PHASES}
 
 GROUP_NODE_COLOUR = theme.PALETTES["phase"]["Ground"]  # neutral grey: a group is not a phase
-# Band opacity. At 0.35 take-off and cruise bands came too close for protanopia and
-# tritanopia (simulated CIELAB distance about 8 on white and on the dark theme); at 0.55 every
-# pair of main-phase bands stays above 12 in both themes.
-LINK_ALPHA_MAIN = 0.55
-LINK_ALPHA_SUB = 0.4
+# Band opacity: high enough that bands of different phases stay apart under simulated
+# colour-vision deficiencies (tests/test_colours.py), low enough that crossing bands still show.
+# Main bands: at 0.55 the closest pair (take-off/cruise) was about 12, at 0.65 it is about 14.
+# Sub-phase bands: at 0.4 the two parts of a phase were 10 to 12 apart, at 0.55 at least 13.
+LINK_ALPHA_MAIN = 0.65
+LINK_ALPHA_SUB = 0.55
 
 
 # ---- data shaping --------------------------------------------------------------------------
