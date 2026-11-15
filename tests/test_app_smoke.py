@@ -22,7 +22,7 @@ from streamlit.testing.v1 import AppTest
 from src.data import loader, schema
 
 APP = Path(__file__).resolve().parents[1] / "app.py"
-SECTIONS = ["Overview", "Flight & Temporal", "Energy & Conditions", "Multivariate & ML"]
+SECTIONS = ["Overview", "Flight & Temporal", "Energy & Conditions", "Comparison & Clusters"]
 ROWS_PER_SUB_PHASE = 2
 SECONDS_PER_FLIGHT = ROWS_PER_SUB_PHASE * len(schema.SUB_PHASES)
 WAYPOINTS_PER_FLIGHT = 3  # home + two turns
