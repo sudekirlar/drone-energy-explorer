@@ -7,7 +7,7 @@ With a GitHub Project board:      gh auth refresh -s project                  (o
                                   python scripts/create_issues.py --project 1
   -> also adds every issue to project #1 and fills Status, Day and Estimate (h).
 
-Tasks follow the approved project plan (proje_plani) and chart guide ("On grafik, tek soru").
+Tasks follow the approved project plan and chart guide.
 An issue a teammate already opened for a task can be adopted instead of duplicated:
                                   python scripts/create_issues.py --project 14 --adopt T2=1
   -> issue #1 gets the task's title, labels, milestone and assignee; the plan's checklist is added
@@ -66,8 +66,6 @@ SECTION_ROLE = {"A": "data", "B": "platform", "C": "uiml"}
 ROLE_LABEL = {"platform": "role: platform", "data": "role: data", "uiml": "role: ui-ml"}
 
 # Target day (= on main by the end of that day) and estimate per person in hours, from the plan.
-# The plan was one day behind on Thu 12: Wednesday's work moved to Thursday, and Friday takes both
-# Thursday's and Friday's work so Saturday stays free for quality. Edit freely on the board.
 DAYS = ["Thu 12", "Fri 13", "Sat 14", "Sun 15", "After submission"]
 PLAN = {
     "T0": ("Thu 12", 1.25), "K1": ("Thu 12", 0.2), "T1": ("Thu 12", 0.75), "T5": ("Thu 12", 0.5),
@@ -123,8 +121,8 @@ TASKS = [
     ("T5", "Sample tables that follow the contract", "data", "data", "critical path",
      "Lets charts and the app skeleton start before cleaning is finished (mock-API idea).",
      ["~15 R1 flights covering every payload, altitude and speed level, plus one R6 and one R7",
-      "flights, telemetry_1hz, phase_energy, waypoints, ml_payload (fake predictions, clearly "
-      "marked as sample)", "Write to data/sample/"],
+      "flights, telemetry_1hz, phase_energy, waypoints, ml_payload (placeholder predictions, "
+      "clearly marked as sample)", "Write to data/sample/"],
      "T1", ["data/sample/*.parquet"],
      ["loader reads every sample file", "Column names identical to schema.py"]),
     ("T4", "App skeleton: menu, sidebar filters, theme, example card", "uiml", "setup",

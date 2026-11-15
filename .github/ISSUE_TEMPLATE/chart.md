@@ -17,5 +17,5 @@ labels: chart
 **Expected finding / what to verify**
 
 **Done when**
-- [ ] Card complete: message title, how-to-read line, controls, chart, Finding box
+- [ ] Card complete: title, how-to-read line, controls, chart, finding box (D18)
 - [ ] PR checklist passes

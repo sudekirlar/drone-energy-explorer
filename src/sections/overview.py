@@ -25,8 +25,8 @@ SECTIONS = [
     (
         "Energy & Conditions",
         "Where does the energy go, and how do payload, speed and altitude change it?",
-        "An energy budget (Sankey), a tree of the experiment and a payload–speed heat map "
-        "with a Random Forest model.",
+        "An energy budget (Sankey), the cost of each setting (treemap) and a payload × speed "
+        "heatmap with a Random Forest model.",
         "Sude Kırlar",
     ),
     (

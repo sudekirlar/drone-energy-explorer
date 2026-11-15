@@ -9,23 +9,23 @@ Schema version: see `SCHEMA_VERSION` in `src/data/schema.py`.
 
 ## 1. Data files
 
-| Table | File (in `data/processed/`, falls back to `data/sample/`) | Produced by | Task |
-|---|---|---|---|
-| `flights` | `flights.parquet` | Data (+ 3 phase columns from Platform) | T2, T6 |
-| `telemetry_1hz` | `telemetry_1hz.parquet` | Data (+ phase columns from Platform) | T2, T6 |
-| `phase_energy` | `phase_energy.parquet` | Platform | T6 |
-| `waypoints` | `waypoints.parquet` | Platform | T6 |
-| `ml_payload` | `ml_payload.parquet` | UI & ML | C1 |
-| `quality_log` | `quality_log.json` (list of records) | Data | T2 |
-| (metrics) | `ml_metrics.json` | UI & ML | C1 |
+| Table | File (in `data/processed/`, falls back to `data/sample/`) | Produced by |
+|---|---|---|
+| `flights` | `flights.parquet` | Data (+ 3 phase columns from Platform) |
+| `telemetry_1hz` | `telemetry_1hz.parquet` | Data (+ phase columns from Platform) |
+| `phase_energy` | `phase_energy.parquet` | Platform |
+| `waypoints` | `waypoints.parquet` | Platform |
+| `ml_payload` | `ml_payload.parquet` | UI & ML |
+| `quality_log` | `quality_log.json` (list of records) | Data |
+| (metrics) | `ml_metrics.json` | UI & ML |
 
 Join tables on `flight`. Group-by attributes (payload, speed, altitude, route) live only in
 `flights`; other tables do not repeat them.
 
 Columns produced by two roles: `preprocess.py` writes the Data columns; `phases.py` adds the
 Platform columns (`flights.cruise_power_w`, `climb_power_w`, `wp_turn_count`;
-`telemetry_1hz.t_since_takeoff_s`, `phase`, `sub_phase`). Until `phases.py` exists, sample tables
-contain placeholder values for these columns so charts can be built.
+`telemetry_1hz.t_since_takeoff_s`, `phase`, `sub_phase`). In `data/sample/` these columns hold
+placeholder values, so the sample tables are for building charts, not for findings.
 
 ### `ml_metrics.json`
 
@@ -55,8 +55,8 @@ the file exists, so cards can show a placeholder). Numbers are never typed into 
 }
 ```
 
-The values above are only an illustration of the structure (prototype numbers from the chart
-guide). UI & ML may extend this structure; changing or removing a key is a contract change.
+The values above are only an illustration of the structure (prototype numbers from our first
+plan). UI & ML may extend this structure; changing or removing a key is a contract change.
 
 ---
 
@@ -99,7 +99,7 @@ from src import theme
 
 
 def build_sankey(
-    phase_energy: pd.DataFrame, flights: pd.DataFrame, group_by: str, as_percent: bool = False
+    phase_energy: pd.DataFrame, flights: pd.DataFrame, group_by: str = "altitude"
 ) -> go.Figure:
     """Energy budget: group -> main phase -> sub-phase."""
     ...
@@ -119,7 +119,7 @@ def build_sankey(
 | Overview & Data Quality | `overview.py` | Data |
 | Flight & Temporal Analysis | `flight_temporal.py` | Data |
 | Energy & Experimental Conditions | `energy.py` | Platform |
-| Multivariate Analysis & ML | `multivariate_ml.py` | UI & ML |
+| Comparison & Clusters | `multivariate_ml.py` | UI & ML |
 
 Each file exposes one function that `app.py` calls when the section is selected in the menu:
 
@@ -128,8 +128,8 @@ def render(tables: dict[str, pd.DataFrame]) -> None:
     """tables: every table in schema.TABLES, already filtered by the sidebar."""
 ```
 
-The exact filter object and how `app.py` builds `tables` are defined by UI & ML in T4; sections
-only rely on receiving the filtered tables.
+`app.py` applies the sidebar filters and passes the filtered tables to the selected section;
+sections only rely on receiving them.
 
 ### Card pattern
 
@@ -190,7 +190,7 @@ Everything a visitor reads is in simple English, in short, full sentences.
 - Give units in brackets the first time: "power (W)", "speed (m/s)".
 - A finding talks only about what is on screen, and its numbers are computed from the data.
 - Write "waypoint" in full in sentences; "WP1" is fine as a label on the chart.
-- Write for the visitor, not for the grader. No lecture numbers, slide references or course
+- Write for a visitor of the dashboard. No lecture numbers, slide references or course
   vocabulary on screen ("Lecture 7", "Yi et al.", "encode"); those belong in the report, the
   README and the presentation (`docs/decisions.md` keeps the reasons for each chart).
 - Name people, not roles: "This chart was made by İlayda Demir."
@@ -206,7 +206,7 @@ Only these keys are shared across cards. Add a key here (PR) before using it in 
 | Key | Type | Written by | Read by | Default |
 |---|---|---|---|---|
 | `menu_section` | `str` | top menu (`app.py`) | `app.py` | `"Overview"` |
-| `map_flights` | `list[int]` | route map (G1) | Space-Time Cube, timeline (E2) | `[]` |
+| `map_flights` | `list[int]` | route map (G1) | Space-Time Cube, timeline | `[]` |
 | `cube_flights` | `list[int]` | Space-Time Cube (G2) / "Send to 3D" | Space-Time Cube | `[278, 8, 77]` |
 | `timeline_flight` | `int` | timeline (G3) / "Open in timeline" | timeline | `77` |
 | `kmeans_k` | `int` | PCP k slider (G7) | SPLOM (G8), flight × time heatmap (G10) | `3` |
