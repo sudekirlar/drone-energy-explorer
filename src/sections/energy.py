@@ -95,7 +95,8 @@ HEATMAP = CardInfo(
     how_to_read=(
         "Each cell holds the R1 flights with one payload and one target speed. Its colour and "
         "number show their mean cruise power (W), or, in the two difference views, how far a "
-        "model's prediction is from the measurement."
+        "model's prediction is from the measurement. Hover over a cell for the number of flights "
+        "and the exact values."
     ),
     about=(
         "This chart answers the main question of the dashboard most directly: how do payload "

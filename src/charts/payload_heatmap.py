@@ -38,6 +38,14 @@ def _signed(x: float) -> str:
     return f"{'+' if x > 0 else '−'}{abs(x):.1f} W"
 
 
+def _cell_number(x: float, signed: bool = False) -> str:
+    """'556' for power; '+8' or '−4' (real minus sign) for a difference, '0' when it rounds to 0."""
+    x = round(x)
+    if not signed or x == 0:
+        return f"{x:.0f}"
+    return f"{'+' if x > 0 else '−'}{abs(x):.0f}"
+
+
 # Cell text is dark on light cells and white on dark cells. Streamlit's chart theme gives all
 # chart text one colour, which was unreadable on yellow cells in dark mode.
 DARK_TEXT, LIGHT_TEXT = theme.NEUTRALS["text_dark"], theme.NEUTRALS["text_light"]
@@ -128,14 +136,9 @@ def build_payload_heatmap(
         return _empty("No R1 flights with model predictions match the filters.")
     cells = cell_table(data)
     cells["hover"] = cells.apply(_hover, axis=1)
-    cells["label"] = [
-        (
-            _signed(r[view])
-            if view in GAP_VIEWS
-            else f"{r[view]:.0f} W<br>{int(r['flights'])} flights"
-        )
-        for _, r in cells.iterrows()
-    ]
+    # Only the number goes into a cell, so the labels still fit on a phone. The unit is in the
+    # colour bar title, and the hover gives the number of flights and the exact values.
+    cells["label"] = [_cell_number(r[view], signed=view in GAP_VIEWS) for _, r in cells.iterrows()]
 
     z = _pivot(cells, view)
     if view in GAP_VIEWS:
