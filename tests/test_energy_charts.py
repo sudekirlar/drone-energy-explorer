@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import re
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -324,3 +327,14 @@ def test_hover_shows_how_much_flights_differ() -> None:
     cells = payload_heatmap.cell_table(payload_heatmap.model_data(fl, ml))
     assert "(flights differ by ±7 W)" in payload_heatmap._hover(cells.iloc[0])
     assert "flights differ" not in payload_heatmap._hover(cells.iloc[1])  # equal flights
+
+
+# ---- consistency (#25) ---------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("module", [sankey, treemap, payload_heatmap])
+def test_energy_charts_take_every_colour_from_the_theme(module) -> None:
+    """No colour literal in the chart files: data colours and neutrals come from src/theme.py."""
+    source = Path(module.__file__).read_text(encoding="utf-8")
+    literals = re.findall(r"#[0-9a-fA-F]{6}\b|rgba?\(\s*\d", source)
+    assert literals == [], f"{module.__name__} defines its own colours: {literals}"

@@ -27,7 +27,7 @@ VIEWS = ("observed", "rf", "rf_gap", "lin_gap")
 GAP_VIEWS = ("rf_gap", "lin_gap")
 FEATURE_LABEL = {"payload_g": "Payload", "speed_mps": "Speed", "altitude_m": "Altitude"}
 # A neutral reference line (the "perfect prediction" diagonal), not a data colour.
-REFERENCE_LINE = "rgba(128,128,128,0.7)"
+REFERENCE_LINE = theme.NEUTRALS["reference"]
 
 
 def _signed(x: float) -> str:
@@ -40,7 +40,7 @@ def _signed(x: float) -> str:
 
 # Cell text is dark on light cells and white on dark cells. Streamlit's chart theme gives all
 # chart text one colour, which was unreadable on yellow cells in dark mode.
-DARK_TEXT, LIGHT_TEXT = "#1d1c1a", "#ffffff"
+DARK_TEXT, LIGHT_TEXT = theme.NEUTRALS["text_dark"], theme.NEUTRALS["text_light"]
 
 
 def _text_colour(hex_colour: str) -> str:
@@ -144,7 +144,7 @@ def build_payload_heatmap(
             colorscale=theme.PALETTES["diverging"],
             zmin=-reach,
             zmax=reach,
-            colorbar=dict(title=dict(text="measured −<br>predicted (W)"), thickness=12),
+            colorbar=dict(title=dict(text="Measured −<br>predicted (W)"), thickness=12),
         )
     else:
         both = cells[["observed", "rf"]]
@@ -152,7 +152,7 @@ def build_payload_heatmap(
             colorscale=theme.PALETTES["viridis"],
             zmin=float(both.min().min()),
             zmax=float(both.max().max()),
-            colorbar=dict(title=dict(text="cruise<br>power (W)"), thickness=12),
+            colorbar=dict(title=dict(text="Cruise<br>power (W)"), thickness=12),
         )
 
     fig = go.Figure(
@@ -207,7 +207,7 @@ def build_prediction_scatter(
                 marker=dict(
                     size=7,
                     color=theme.PALETTES["payload"].get(int(payload)),
-                    line=dict(width=0.6, color="rgba(255,255,255,0.7)"),
+                    line=dict(width=0.6, color=theme.NEUTRALS["outline"]),
                 ),
                 customdata=rows[["flight", "speed_mps"]],
                 hovertemplate=(
@@ -231,8 +231,8 @@ def build_prediction_scatter(
     fig.update_layout(
         title=dict(text=f"Each flight: {name} prediction and measurement", font=dict(size=13)),
         height=380,
-        xaxis=dict(title="predicted cruise power (W)", range=[lo, hi]),
-        yaxis=dict(title="measured cruise power (W)", range=[lo, hi]),
+        xaxis=dict(title="Predicted cruise power (W)", range=[lo, hi]),
+        yaxis=dict(title="Measured cruise power (W)", range=[lo, hi]),
         margin=dict(l=10, r=10, t=40, b=10),
         legend=dict(
             title=dict(text="Payload"), orientation="h", x=0, xanchor="left", y=-0.25, yanchor="top"
@@ -263,7 +263,7 @@ def build_importance(metrics: dict) -> go.Figure:
         title=dict(text="Drop in R² when a feature is shuffled", font=dict(size=13)),
         height=380,
         margin=dict(l=10, r=10, t=40, b=10),
-        xaxis=dict(title="drop in R²", rangemode="tozero"),
+        xaxis=dict(title="Drop in R²", rangemode="tozero"),
     )
     return fig
 
