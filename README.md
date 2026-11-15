@@ -11,8 +11,6 @@ Team: Sude Kırlar, İlayda Demir, Pelin Gül Kızılkılıç
 An interactive Streamlit dashboard built from 209 recordings (196 analyzed flights) of a DJI Matrice 100 package-delivery
 quadcopter, recorded by Carnegie Mellon University in 2019.
 
-_This README is a skeleton. Sections marked TODO are filled in during the week._
-
 ## Approach (CRISP-DM)
 
 We followed the six phases of CRISP-DM. The table shows what each phase meant in this project
@@ -199,7 +197,7 @@ request and on `main`, and a pull request cannot be merged while CI fails. The t
 ## Machine learning
 
 - **Unsupervised flight-regime clustering (K-means):** Z-score standardized flight-level telemetry features partitioned into *k* = 2–6 operating regimes (`src/ml/clustering.py`), evaluated in real time with the silhouette coefficient, linked across G7, G8 and G10, and documented with assumptions and limitations in [docs/MODEL_CARD.md](docs/MODEL_CARD.md).
-- TODO: Random Forest regression, evaluation and limitations.
+- **Supervised cruise-power prediction (Random Forest):** Predicts cruise power from payload and speed (`src/ml/`), evaluated with cross-validation against a linear baseline to power the measured, predicted and residual views in G6 ([docs/MODEL_CARD.md](docs/MODEL_CARD.md)).
 
 ## Assignment requirements
 
