@@ -6,9 +6,14 @@ the CIE76 colour difference (Delta E). Two colours that should be told apart mus
 MIN_DELTA_E apart for normal vision and for each deficiency.
 
 MIN_DELTA_E = 10 is our working rule, not a standard: about 2.3 is just noticeable for large
-patches side by side, and thin bands and small points need much more. Complete colour blindness
-(achromatopsia) is not tested here: there, the Sankey relies on its node labels and the
-timeline on its phase key, and the ordered palettes are checked by lightness instead.
+patches side by side, and thin bands and small points need much more.
+
+Complete colour blindness (achromatopsia) leaves only lightness, so it is tested on CIELAB L*
+with the same threshold: the phases (and Ground), the two parts of each phase, and every ordered
+palette must stay apart in grey. Two things are left to other cues on purpose. Translucent bands
+lose most of their lightness differences, so the Sankey's bands lead to labelled nodes and the
+timeline has a full-colour strip and a key. The K-means colours (Okabe & Ito) are not ordered by
+lightness, so the parallel coordinates also show each flight's group on its own axis.
 
 Translucent colours are tested as they appear on the page, blended with Streamlit's light and
 dark background.
@@ -204,3 +209,30 @@ def test_timeline_shows_the_phases_at_full_strength() -> None:
     strip = [s for s in fig.layout.shapes if s.yref == "paper" and s.type == "rect"]
     assert {s.fillcolor for s in strip} == {theme.PALETTES["phase"][p] for p in set(phases)}
     assert all(s.opacity is None or s.opacity == 1 for s in strip)
+
+
+# ---- complete colour blindness (achromatopsia): only lightness is left ----------------------
+
+
+def _closest_in_grey(colours: dict[str, str]) -> tuple[float, str]:
+    return min(
+        (abs(_lightness(colours[a]) - _lightness(colours[b])), f"{a} / {b}")
+        for a, b in itertools.combinations(colours, 2)
+    )
+
+
+def test_phases_stay_apart_in_grey() -> None:
+    """Map, cube, timeline strip, flight heatmap and Sankey nodes, including Ground."""
+    value, where = _closest_in_grey(dict(theme.PALETTES["phase"]))
+    assert value >= MIN_DELTA_E, f"{where}: {value:.1f}"
+
+
+@pytest.mark.parametrize("pair", SIBLINGS, ids=lambda p: "/".join(p))
+def test_the_two_parts_of_a_phase_stay_apart_in_grey(pair: tuple[str, str]) -> None:
+    value, where = _closest_in_grey({s: theme.PALETTES["sub_phase"][s] for s in pair})
+    assert value >= MIN_DELTA_E, f"{where}: {value:.1f}"
+
+
+def test_payload_colours_stay_apart_in_grey() -> None:
+    value, where = _closest_in_grey({f"{p} g": theme.PALETTES["payload"][p] for p in (0, 250, 500)})
+    assert value >= MIN_DELTA_E, f"{where}: {value:.1f}"
