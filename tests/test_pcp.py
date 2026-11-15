@@ -42,7 +42,7 @@ def test_build_pcp_has_nine_measures_plus_group_axis_and_legend() -> None:
     dim_labels = [d.label for d in trace.dimensions]
     assert len(PCP_AXES) == 9
     assert len(dim_labels) == 10
-    assert "Voltage drop (V)" in dim_labels
+    assert "?Voltage (V)" in dim_labels
     assert "Group" in dim_labels
     assert all("anemometer" not in lbl.lower() for lbl in dim_labels)
 
