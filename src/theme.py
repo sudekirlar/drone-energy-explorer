@@ -20,24 +20,26 @@ PALETTES = {
         "#fde725",
     ],
     # Categorical, one colour per main phase; the same everywhere (map, cube, timeline, Sankey).
+    # The lightness steps (L* about 37, 49, 61, 75 and 86 for Ground) keep the phases apart even
+    # without colour vision; tests/test_colours.py checks this.
     "phase": {
         # Light grey: under deuteranomaly a mid grey looked almost like Landing's green.
         "Ground": "#d9d6cc",
-        "Take-off": "#7a5195",
-        "Cruise": "#2a78d6",
-        "Manoeuvre": "#eda100",
-        "Landing": "#1baf7a",
+        "Take-off": "#6e4689",
+        "Cruise": "#2274d2",
+        "Manoeuvre": "#f7a914",
+        "Landing": "#06a873",
     },
     # Sub-phases use their main phase's colour; the second sub-phase of a pair is lighter.
     "sub_phase": {
         "Ground": "#d9d6cc",
         "Spool-up": "#b39bc8",
-        "Climb": "#7a5195",
-        "Straight leg": "#2a78d6",
+        "Climb": "#6e4689",
+        "Straight leg": "#2274d2",
         "Sloped cruise": "#8ab8ee",
-        "WP turn": "#eda100",
-        "Speed change": "#f5cd73",
-        "Descent": "#1baf7a",
+        "WP turn": "#f7a914",
+        "Speed change": "#fcd479",
+        "Descent": "#06a873",
     },
     # Payload is ordinal: one hue, darker = heavier.
     "payload": {
