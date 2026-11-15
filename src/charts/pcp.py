@@ -18,7 +18,7 @@ PCP_AXES: tuple[tuple[str, str, str], ...] = (
     ("wh_per_km", "Wh/km", ".1f"),
     ("cruise_power_w", "Cruise (W)", ".0f"),
     ("climb_power_w", "Climb (W)", ".0f"),
-    ("voltage_drop_v", "?Voltage (V)", ".2f"),
+    ("voltage_drop_v", "ΔVoltage (V)", ".2f"),
 )
 
 
