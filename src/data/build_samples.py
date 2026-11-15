@@ -144,7 +144,7 @@ def build() -> None:
     for name in ("flights", "telemetry_1hz", "quality_log"):
         loader.load_table(name)
 
-    doc = f"""# DATASHEET — CMU Drone Delivery Energy Explorer (Data role)
+    doc = f"""# DATASHEET — CMU Delivery Drone Energy Explorer (Data role)
 
 ## Origin, purpose and license
 - Source: Rodrigues et al., *In-flight positional and energy use data set of a DJI Matrice 100 quadcopter for small package delivery* (Scientific Data, 2021).

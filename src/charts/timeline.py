@@ -8,6 +8,11 @@ from plotly.subplots import make_subplots
 
 from src.theme import PALETTES
 
+# Faint phase bands behind the lines (0.11 was hard to see on the dark theme) and, above the
+# top panel, a strip with the same phases in full colour (paper coordinates).
+BAND_OPACITY = 0.22
+STRIP = (1.006, 1.026)
+
 
 def build_timeline(
     telemetry: pd.DataFrame,
@@ -54,9 +59,23 @@ def build_timeline(
                 x0=left,
                 x1=right,
                 fillcolor=PALETTES["phase"][phase],
-                opacity=0.22,  # 0.11 was hard to see on the dark theme
+                opacity=BAND_OPACITY,
                 line_width=0,
                 layer="below",
+            )
+            # A strip in full colour above the panels. Faint bands keep the lines readable, but
+            # at that opacity neighbouring phases come too close for colour-blind readers
+            # (tests/test_colours.py); the strip carries the phase colours at full strength.
+            fig.add_shape(
+                type="rect",
+                xref="x",
+                yref="paper",
+                x0=left,
+                x1=right,
+                y0=STRIP[0],
+                y1=STRIP[1],
+                fillcolor=PALETTES["phase"][phase],
+                line_width=0,
             )
         if "sub_phase" in data:
             turns = data.loc[data["sub_phase"] == "WP turn", "t_s"]
@@ -86,7 +105,7 @@ def build_timeline(
             xref="paper",
             yref="paper",
             x=0,
-            y=1.0,
+            y=STRIP[1] + 0.004,
             xanchor="left",
             yanchor="bottom",
             showarrow=False,
@@ -98,6 +117,6 @@ def build_timeline(
         hovermode="x unified",
         # The measures' legend goes under the chart; the phase key sits above it.
         legend={"orientation": "h", "x": 0, "xanchor": "left", "y": -0.09, "yanchor": "top"},
-        margin={"t": 72, "b": 90},
+        margin={"t": 90, "b": 90},
     )
     return fig

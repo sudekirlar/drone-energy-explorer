@@ -7,7 +7,7 @@ import plotly.io as pio
 
 from src.data import schema
 
-# Colours follow the team-approved chart guide ("On grafik, tek soru"), so the dashboard
+# Colours follow the team-approved chart guide, so the dashboard
 # matches the guide every chart was designed from.
 PALETTES = {
     # Sequential, for quantities (power, energy, Wh/km).
@@ -20,24 +20,26 @@ PALETTES = {
         "#fde725",
     ],
     # Categorical, one colour per main phase; the same everywhere (map, cube, timeline, Sankey).
+    # The lightness steps (L* about 37, 49, 61, 75 and 86 for Ground) keep the phases apart even
+    # without colour vision; tests/test_colours.py checks this.
     "phase": {
         # Light grey: under deuteranomaly a mid grey looked almost like Landing's green.
         "Ground": "#d9d6cc",
-        "Take-off": "#7a5195",
-        "Cruise": "#2a78d6",
-        "Manoeuvre": "#eda100",
-        "Landing": "#1baf7a",
+        "Take-off": "#6e4689",
+        "Cruise": "#2274d2",
+        "Manoeuvre": "#f7a914",
+        "Landing": "#06a873",
     },
     # Sub-phases use their main phase's colour; the second sub-phase of a pair is lighter.
     "sub_phase": {
         "Ground": "#d9d6cc",
         "Spool-up": "#b39bc8",
-        "Climb": "#7a5195",
-        "Straight leg": "#2a78d6",
+        "Climb": "#6e4689",
+        "Straight leg": "#2274d2",
         "Sloped cruise": "#8ab8ee",
-        "WP turn": "#eda100",
-        "Speed change": "#f5cd73",
-        "Descent": "#1baf7a",
+        "WP turn": "#f7a914",
+        "Speed change": "#fcd479",
+        "Descent": "#06a873",
     },
     # Payload is ordinal: one hue, darker = heavier.
     "payload": {
@@ -71,6 +73,15 @@ PALETTES = {
 
 assert set(PALETTES["phase"]) == set(schema.PHASES)
 assert set(PALETTES["sub_phase"]) == set(schema.SUB_PHASES)
+
+# Neutral colours for what is not data: text drawn on coloured cells, reference lines and the
+# edges of points. Each one reads on both the light and the dark Streamlit theme.
+NEUTRALS = {
+    "text_dark": "#1d1c1a",  # text on a light cell
+    "text_light": "#ffffff",  # text on a dark cell
+    "reference": "rgba(128,128,128,0.7)",  # e.g. the "perfect prediction" line, error bars
+    "outline": "rgba(255,255,255,0.7)",  # edge that keeps dark points visible on a dark page
+}
 
 
 def get_plotly_template() -> go.layout.Template:

@@ -1,4 +1,4 @@
-"""Main application for Drone Delivery Energy Explorer."""
+"""Main application for Delivery Drone Energy Explorer."""
 
 from __future__ import annotations
 
@@ -20,8 +20,8 @@ from src.theme import register_plotly_template
 # ==================================================
 
 st.set_page_config(
-    page_title="Drone Delivery Energy Explorer",
-    page_icon="🚁",
+    page_title="Delivery Drone Energy Explorer",
+    page_icon=":material/drone:",
     layout="wide",
 )
 
@@ -72,7 +72,7 @@ except loader.SchemaError as error:
 
 header_col, badge_col = st.columns([5, 1])
 with header_col:
-    st.title("🚁 Drone Delivery Energy Explorer")
+    st.title(":material/drone: Delivery Drone Energy Explorer")
     st.markdown(
         "Explore how payload, target speed, and altitude influence drone energy consumption."
     )
@@ -166,13 +166,14 @@ sections = {
     "Overview": overview,
     "Flight & Temporal": flight_temporal,
     "Energy & Conditions": energy,
-    "Multivariate & ML": multivariate_ml,
+    "Comparison & Clusters": multivariate_ml,
 }
 
 # The menu keeps its own value under the "menu_section" key (interfaces.md). Passing a
 # `default` that changes on every run would make Streamlit treat it as a new widget and drop
 # every second click; `required=True` stops a second click from deselecting the section.
-if "menu_section" not in st.session_state:
+if st.session_state.get("menu_section") not in sections:
+    # Also covers a browser tab still open on a section name from an older version.
     st.session_state["menu_section"] = "Overview"
 
 st.segmented_control(

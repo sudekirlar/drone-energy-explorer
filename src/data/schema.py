@@ -37,7 +37,7 @@ SUB_PHASES = (
     "Speed change",
     "Descent",
 )
-# Which main phase each sub-phase belongs to (chart guide, "Uçuşun evreleri").
+# Which main phase each sub-phase belongs to (see decision D6).
 SUB_PHASE_PARENT = {
     "Ground": "Ground",
     "Spool-up": "Take-off",

@@ -25,13 +25,13 @@ SECTIONS = [
     (
         "Energy & Conditions",
         "Where does the energy go, and how do payload, speed and altitude change it?",
-        "An energy budget (Sankey), a tree of the experiment and a payload–speed heat map "
-        "with a Random Forest model.",
+        "An energy budget (Sankey), the cost of each setting (treemap) and a payload × speed "
+        "heatmap with a Random Forest model.",
         "Sude Kırlar",
     ),
     (
-        "Multivariate & ML",
-        "Which flights are alike, and how are their measures related?",
+        "Comparison & Clusters",
+        "What patterns appear when all flights are compared at once?",
         "Parallel coordinates with K-means groups, a scatterplot matrix, power by phase and "
         "payload, and all flights over time.",
         "Pelin Gül Kızılkılıç",

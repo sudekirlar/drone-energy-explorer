@@ -12,11 +12,11 @@ Expected layout after download and unzip:
 data/raw/
 ├── parameters.csv        209 flights × 7 columns
 ├── flights.csv           257,896 rows × 28 columns
-└── flights/              209 per-flight CSV files (optional, used by the audit)
+└── flights/              209 per-flight CSV files (optional; the dashboard does not use them)
 ```
 
 Rules:
 - This folder is **read-only**. Never open a raw CSV in Excel and save it; every change happens in
   `src/data/preprocess.py`.
-- The app never reads this folder. It reads `data/processed/` (or `data/sample/` until the
-  processed tables exist).
+- The app never reads this folder. It reads `data/processed/`, and falls back to `data/sample/`
+  when a processed table is missing.
