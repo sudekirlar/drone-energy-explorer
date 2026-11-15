@@ -1,4 +1,4 @@
-# Drone Delivery Energy Explorer
+# Delivery Drone Energy Explorer
 
 **Live app:** https://data-energy-explorer.streamlit.app/
 

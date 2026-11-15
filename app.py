@@ -1,4 +1,4 @@
-"""Main application for Drone Delivery Energy Explorer."""
+"""Main application for Delivery Drone Energy Explorer."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from src.theme import register_plotly_template
 # ==================================================
 
 st.set_page_config(
-    page_title="Drone Delivery Energy Explorer",
+    page_title="Delivery Drone Energy Explorer",
     page_icon=":material/drone:",
     layout="wide",
 )
@@ -72,7 +72,7 @@ except loader.SchemaError as error:
 
 header_col, badge_col = st.columns([5, 1])
 with header_col:
-    st.title(":material/drone: Drone Delivery Energy Explorer")
+    st.title(":material/drone: Delivery Drone Energy Explorer")
     st.markdown(
         "Explore how payload, target speed, and altitude influence drone energy consumption."
     )
