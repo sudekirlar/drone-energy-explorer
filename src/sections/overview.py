@@ -30,8 +30,8 @@ SECTIONS = [
         "Sude Kırlar",
     ),
     (
-        "Multivariate & ML",
-        "Which flights are alike, and how are their measures related?",
+        "Comparison & Clusters",
+        "What patterns appear when all flights are compared at once?",
         "Parallel coordinates with K-means groups, a scatterplot matrix, power by phase and "
         "payload, and all flights over time.",
         "Pelin Gül Kızılkılıç",
